@@ -1,0 +1,19 @@
+# reactive-spring-boot-webflux-abac-security
+
+The main advantage of the ABAC security model is the ability to describe the security policy through a set of rules based on the attributes involved in user actions. This approach allows you to fine-tune security policies to the required level.
+
+The target area of application of ABAC is the description of the security policies of the branch system with full access control to any level of nesting and description complexity. All ABAC rules are described in the form of SpEL expressions and, unlike RBAC, are stored in a database, where they can be easily analyzed and modified accordingly.
+
+The Maven Central dependency instead of the library `spring-data-abac-security`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.github.sevenparadigms</groupId>
+    <artifactId>reactive-spring-abac-security</artifactId>
+    <version>1.0.4</version>
+</dependency>
+----
+
+The proposed library on the client side activates Spring Security with the ABAC security model, while caching data by token, accessing the authorization service only once. The token revocation is marked in the cache through the Spring Event, the initiation of which is left to the infrastructure logic when the user session ends.
+
