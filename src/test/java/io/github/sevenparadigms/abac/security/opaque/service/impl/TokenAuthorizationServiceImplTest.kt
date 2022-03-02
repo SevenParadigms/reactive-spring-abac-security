@@ -33,7 +33,7 @@ class TokenAuthorizationServiceImplTest {
         val authorities = ArrayList<SimpleGrantedAuthority>()
         authorities.add(SimpleGrantedAuthority("USER"))
 
-        val correctToken = jwtTokenProvider.getToken(UsernamePasswordAuthenticationToken(
+        val correctToken = jwtTokenProvider.getAuthToken(UsernamePasswordAuthenticationToken(
             this.createUser(authorities), "pass", authorities
         ))
         val response = tokenAuthorizationService.validateToken(TokenIntrospectionRequest(correctToken))

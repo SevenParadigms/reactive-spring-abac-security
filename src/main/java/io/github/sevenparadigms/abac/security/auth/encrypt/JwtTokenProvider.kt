@@ -32,23 +32,17 @@ class JwtTokenProvider {
     @Value("\${spring.security.expiration}")
     lateinit var expiration: String
 
-    fun getToken(authentication: Authentication): String {
-        val authorities = authentication.authorities.stream()
-            .map { obj: GrantedAuthority -> obj.authority }
-            .toList()
-
-        return Jwts.builder()
-            .setSubject(authentication.name)
-            .claim(TOKEN_ROLES, authorities)
-            .signWith(SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.HS512.jcaName))
-            .setExpiration(Date(Date().time + expiration.toLong() * 1000))
-            .compact()
-    }
+    fun getAuthToken(authentication: Authentication): String = Jwts.builder()
+        .setSubject(authentication.name)
+        .claim(TOKEN_ROLES, authentication.authorities.stream().map { obj -> obj.authority }.toList())
+        .signWith(SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.HS512.jcaName))
+        .setExpiration(Date(Date().time + expiration.toLong() * 1000))
+        .compact()
 
     fun getAuthentication(authorizeKey: String): Authentication {
         val claims = getClaims(authorizeKey)
         val authorities: Collection<GrantedAuthority> = claims.get(TOKEN_ROLES, MutableCollection::class.java)
-                .map { role -> SimpleGrantedAuthority(role.toString()) }.toList()
+            .map { role -> SimpleGrantedAuthority(role.toString()) }.toList()
         val principal = User(claims.subject, StringUtils.EMPTY, authorities)
         return UsernamePasswordAuthenticationToken(principal, claims, authorities)
     }

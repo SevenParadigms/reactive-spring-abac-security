@@ -24,13 +24,13 @@ class JwtTokenProviderTest {
 
     @Test
     fun getToken() {
-        Assertions.assertNotNull(jwtTokenProvider.getToken(authentication))
+        Assertions.assertNotNull(jwtTokenProvider.getAuthToken(authentication))
     }
 
     @Test
     fun getClaims_whenNoAuthorities() {
         val actual = jwtTokenProvider.getClaims(
-            jwtTokenProvider.getToken(
+            jwtTokenProvider.getAuthToken(
                 UsernamePasswordAuthenticationToken("user", "password")
             )
         )
@@ -46,7 +46,7 @@ class JwtTokenProviderTest {
 
     @Test
     fun getClaims() {
-        val actual = jwtTokenProvider.getClaims(jwtTokenProvider.getToken(authentication))
+        val actual = jwtTokenProvider.getClaims(jwtTokenProvider.getAuthToken(authentication))
 
         Assertions.assertEquals("user", actual["sub"])
         Assertions.assertEquals(listOf("USER"), actual["roles"])
@@ -55,7 +55,7 @@ class JwtTokenProviderTest {
 
     @Test
     fun getAuthentication() {
-        val token = jwtTokenProvider.getToken(authentication)
+        val token = jwtTokenProvider.getAuthToken(authentication)
         Assertions.assertTrue(
             ReflectionEquals(
                 authentication,

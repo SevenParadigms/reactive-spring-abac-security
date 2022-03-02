@@ -40,14 +40,14 @@ class TokenCacheServiceTest {
         opaqueTokenPrincipal = this.createCachedToken()
         expiredToken = this.getTestExpiredToken()
         invalidToken = expiredToken.dropLast(10)
-        correctToken = jwtTokenProvider.getToken(UsernamePasswordAuthenticationToken(
+        correctToken = jwtTokenProvider.getAuthToken(UsernamePasswordAuthenticationToken(
             null, null, Collections.emptyList()
         ))
     }
 
     @Test
     fun putInCache_whenSuccess() {
-        val correctToken = jwtTokenProvider.getToken(UsernamePasswordAuthenticationToken(
+        val correctToken = jwtTokenProvider.getAuthToken(UsernamePasswordAuthenticationToken(
             null, null, Collections.emptyList()
         ))
         val actual = cacheService.putInCache(correctToken, opaqueTokenPrincipal)
@@ -146,7 +146,7 @@ class TokenCacheServiceTest {
 
     @Test
     fun revokeToken_whenOk() {
-        val revokedToken = jwtTokenProvider.getToken(UsernamePasswordAuthenticationToken(
+        val revokedToken = jwtTokenProvider.getAuthToken(UsernamePasswordAuthenticationToken(
             null, null, Collections.emptyList()
         ))
         val revokeToken = createCachedToken()

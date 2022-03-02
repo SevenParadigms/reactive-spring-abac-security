@@ -107,7 +107,7 @@ open class ConfigHelper {
             .filter { !ObjectUtils.isEmpty(it.login) && !ObjectUtils.isEmpty(it.password) }
             .switchIfEmpty(Mono.error { throw BadCredentialsException("Login and password required") })
             .flatMap { authenticationManager.authenticate(UsernamePasswordAuthenticationToken(it.login, it.password)) }
-            .flatMap { ok().bodyValue(jwtTokenProvider.getToken(it)) }
+            .flatMap { ok().bodyValue(jwtTokenProvider.getAuthToken(it)) }
     }
 
     fun validateOpaqueToken(serverRequest: ServerRequest): Mono<ServerResponse> {
