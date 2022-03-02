@@ -13,7 +13,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import kotlin.collections.ArrayList
 
 @ContextConfiguration(classes = [AuthConfiguration::class])
 @ExtendWith(SpringExtension::class)
@@ -36,7 +35,7 @@ class JwtTokenProviderTest {
             )
         )
         Assertions.assertEquals("user", actual["sub"])
-        Assertions.assertEquals("", actual["auth"])
+        Assertions.assertEquals(ArrayList<String>(), actual["roles"])
         Assertions.assertNotNull(actual["exp"])
     }
 
@@ -50,7 +49,7 @@ class JwtTokenProviderTest {
         val actual = jwtTokenProvider.getClaims(jwtTokenProvider.getToken(authentication))
 
         Assertions.assertEquals("user", actual["sub"])
-        Assertions.assertEquals("USER", actual["auth"])
+        Assertions.assertEquals(listOf("USER"), actual["roles"])
         Assertions.assertNotNull(actual["exp"])
     }
 

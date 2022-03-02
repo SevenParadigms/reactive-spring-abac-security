@@ -1,6 +1,6 @@
 package io.github.sevenparadigms.abac.security.auth.encrypt
 
-import io.github.sevenparadigms.abac.Constants.AUTHORITIES_KEY
+import io.github.sevenparadigms.abac.Constants.TOKEN_ROLES
 import io.jsonwebtoken.*
 import io.jsonwebtoken.jackson.io.JacksonDeserializer
 import io.jsonwebtoken.security.SignatureException
@@ -8,7 +8,6 @@ import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils
 import org.sevenparadigms.kotlin.common.error
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.data.r2dbc.repository.query.Dsl
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
@@ -19,8 +18,8 @@ import org.springframework.stereotype.Component
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
-import java.util.stream.Collectors
 import javax.crypto.spec.SecretKeySpec
+import kotlin.streams.toList
 
 @Component
 class JwtTokenProvider {
@@ -36,11 +35,11 @@ class JwtTokenProvider {
     fun getToken(authentication: Authentication): String {
         val authorities = authentication.authorities.stream()
             .map { obj: GrantedAuthority -> obj.authority }
-            .collect(Collectors.joining(Dsl.COMMA))
+            .toList()
 
         return Jwts.builder()
             .setSubject(authentication.name)
-            .claim(AUTHORITIES_KEY, authorities)
+            .claim(TOKEN_ROLES, authorities)
             .signWith(SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.HS512.jcaName))
             .setExpiration(Date(Date().time + expiration.toLong() * 1000))
             .compact()
@@ -48,10 +47,8 @@ class JwtTokenProvider {
 
     fun getAuthentication(authorizeKey: String): Authentication {
         val claims = getClaims(authorizeKey)
-        val authorities: Collection<GrantedAuthority> =
-            Arrays.stream(claims[AUTHORITIES_KEY].toString().split(Dsl.COMMA.toRegex()).toTypedArray())
-                .map { role -> SimpleGrantedAuthority(role) }
-                .collect(Collectors.toList())
+        val authorities: Collection<GrantedAuthority> = claims.get(TOKEN_ROLES, MutableCollection::class.java)
+                .map { role -> SimpleGrantedAuthority(role.toString()) }.toList()
         val principal = User(claims.subject, StringUtils.EMPTY, authorities)
         return UsernamePasswordAuthenticationToken(principal, claims, authorities)
     }

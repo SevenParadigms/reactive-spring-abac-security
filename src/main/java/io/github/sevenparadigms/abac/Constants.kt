@@ -25,6 +25,7 @@ object Constants {
     const val TOKEN_CACHE = "tokens"
     const val TOKEN_INTROSPECTION_STATUS = "token_status"
     const val TOKEN_INTROSPECTION_SCOPE = "scope"
+    const val TOKEN_ROLES = "roles"
 
     val whitelist = arrayOf(
         "/actuator/**",
