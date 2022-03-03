@@ -1,4 +1,4 @@
-# reactive-spring-boot-webflux-abac-security
+= reactive-spring-boot-webflux-abac-security
 
 The main advantage of the ABAC security model is the ability to describe the security policy through a set of rules based on the attributes involved in user actions. This approach allows you to fine-tune security policies to the required level.
 
@@ -11,7 +11,7 @@ The Maven Central dependency instead of the library `spring-data-abac-security`:
 <dependency>
     <groupId>io.github.sevenparadigms</groupId>
     <artifactId>reactive-spring-abac-security</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
 </dependency>
 ----
 
