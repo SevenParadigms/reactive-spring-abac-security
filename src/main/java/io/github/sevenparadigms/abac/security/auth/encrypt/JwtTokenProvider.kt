@@ -1,6 +1,6 @@
 package io.github.sevenparadigms.abac.security.auth.encrypt
 
-import io.github.sevenparadigms.abac.Constants.TOKEN_ROLES
+import io.github.sevenparadigms.abac.Constants.AUTHORITIES_KEY
 import io.jsonwebtoken.*
 import io.jsonwebtoken.jackson.io.JacksonDeserializer
 import io.jsonwebtoken.security.SignatureException
@@ -34,14 +34,14 @@ class JwtTokenProvider {
 
     fun getAuthToken(authentication: Authentication): String = Jwts.builder()
         .setSubject(authentication.name)
-        .claim(TOKEN_ROLES, authentication.authorities.stream().map { obj -> obj.authority }.toList())
+        .claim(AUTHORITIES_KEY, authentication.authorities.stream().map { it.authority }.toList())
         .signWith(SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.HS512.jcaName))
         .setExpiration(Date(Date().time + expiration.toLong() * 1000))
         .compact()
 
     fun getAuthentication(authorizeKey: String): Authentication {
         val claims = getClaims(authorizeKey)
-        val authorities: Collection<GrantedAuthority> = claims.get(TOKEN_ROLES, MutableCollection::class.java)
+        val authorities: List<GrantedAuthority> = claims.get(AUTHORITIES_KEY, List::class.java)
             .map { role -> SimpleGrantedAuthority(role.toString()) }.toList()
         val principal = User(claims.subject, StringUtils.EMPTY, authorities)
         return UsernamePasswordAuthenticationToken(principal, claims, authorities)

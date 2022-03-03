@@ -35,7 +35,7 @@ class JwtTokenProviderTest {
             )
         )
         Assertions.assertEquals("user", actual["sub"])
-        Assertions.assertEquals(ArrayList<String>(), actual["roles"])
+        Assertions.assertEquals(ArrayList<String>(), actual["auth"])
         Assertions.assertNotNull(actual["exp"])
     }
 
@@ -49,24 +49,26 @@ class JwtTokenProviderTest {
         val actual = jwtTokenProvider.getClaims(jwtTokenProvider.getAuthToken(authentication))
 
         Assertions.assertEquals("user", actual["sub"])
-        Assertions.assertEquals(listOf("USER"), actual["roles"])
+        Assertions.assertEquals(listOf("role"), actual["auth"])
         Assertions.assertNotNull(actual["exp"])
     }
 
     @Test
     fun getAuthentication() {
         val token = jwtTokenProvider.getAuthToken(authentication)
+        val authentication = jwtTokenProvider.getAuthentication(token)
         Assertions.assertTrue(
             ReflectionEquals(
                 authentication,
                 "credentials"
             ).matches(jwtTokenProvider.getAuthentication(token))
         )
+        Assertions.assertEquals(authentication.authorities.map { it.authority }, listOf("role"))
     }
 
     private fun createAuthentication(): Authentication {
         val authorities = ArrayList<SimpleGrantedAuthority>()
-        authorities.add(SimpleGrantedAuthority("USER"))
+        authorities.add(SimpleGrantedAuthority("role"))
 
         return UsernamePasswordAuthenticationToken(createUser(authorities), "password", authorities)
     }
