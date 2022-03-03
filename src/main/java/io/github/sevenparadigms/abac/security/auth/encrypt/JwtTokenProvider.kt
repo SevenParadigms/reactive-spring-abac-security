@@ -23,13 +23,13 @@ import kotlin.streams.toList
 
 @Component
 class JwtTokenProvider {
-    @Value("\${spring.security.secret}")
+    @Value("\${spring.security.secret:}")
     lateinit var seckey: String
 
-    @Value("\${spring.security.public}")
+    @Value("\${spring.security.public:}")
     lateinit var pubkey: String
 
-    @Value("\${spring.security.expiration}")
+    @Value("\${spring.security.expiration:}")
     lateinit var expiration: String
 
     fun getAuthToken(authentication: Authentication): String = Jwts.builder()
@@ -52,7 +52,7 @@ class JwtTokenProvider {
             val key = if (ObjectUtils.isNotEmpty(seckey) && ObjectUtils.isNotEmpty(expiration))
                 SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.HS512.jcaName)
             else
-                if (ObjectUtils.isNotEmpty(pubkey)) {
+                if (ObjectUtils.isNotEmpty(pubkey.trim())) {
                     val keySpec = X509EncodedKeySpec(Base64.getDecoder().decode(pubkey))
                     KeyFactory.getInstance("RSA").generatePublic(keySpec)
                 } else throw RuntimeException("Property with public key[spring.security.public] not found")

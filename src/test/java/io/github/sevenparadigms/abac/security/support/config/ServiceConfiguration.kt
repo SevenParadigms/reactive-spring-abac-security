@@ -4,8 +4,8 @@ import io.github.sevenparadigms.abac.Constants
 import io.github.sevenparadigms.abac.security.abac.data.AbacRuleRepository
 import io.github.sevenparadigms.abac.security.abac.service.AbacRulePermissionService
 import io.github.sevenparadigms.abac.security.abac.service.ExpressionParserCache
-import io.github.sevenparadigms.abac.security.support.model.ServerWebExchangeImpl
 import io.github.sevenparadigms.abac.security.context.ExchangeContext
+import io.github.sevenparadigms.abac.security.support.model.ServerWebExchangeImpl
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.TestConfiguration
@@ -28,7 +28,7 @@ class ServiceConfiguration {
 
     @Bean
     fun exchangeContext(
-        @Value("\${spring.security.expiration}") expiration: String
+        @Value("\${spring.security.expiration:300}") expiration: String
     ): ExchangeContext {
         val exchangeContext = ExchangeContext(expiration)
 
