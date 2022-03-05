@@ -15,12 +15,15 @@ import org.springframework.data.r2dbc.support.JsonUtils
 import org.springframework.http.codec.ServerCodecConfigurer
 import org.springframework.http.codec.json.Jackson2JsonDecoder
 import org.springframework.http.codec.json.Jackson2JsonEncoder
-import org.springframework.web.reactive.config.CorsRegistry
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.reactive.CorsWebFilter
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 import org.springframework.web.reactive.config.WebFluxConfigurer
 import org.springframework.web.server.session.WebSessionManager
 import reactor.core.publisher.Mono
 import reactor.netty.Connection
 import reactor.netty.http.server.HttpServer
+
 
 @Configuration
 class WebFluxConfig : WebFluxConfigurer {
@@ -32,13 +35,18 @@ class WebFluxConfig : WebFluxConfigurer {
         }
     }
 
-    override fun addCorsMappings(corsRegistry: CorsRegistry) {
-        corsRegistry.addMapping("/**")
-            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-            .allowedOriginPatterns("*")
-            .allowedHeaders("*")
-            .maxAge(3600)
-            .allowCredentials(true)
+    @Bean
+    fun webFilter(): CorsWebFilter {
+        val configuration = CorsConfiguration().apply {
+            allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            allowedOriginPatterns = listOf("*")
+            allowedHeaders = listOf("*")
+            maxAge = 3600L
+            allowCredentials = true
+        }
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", configuration)
+        return CorsWebFilter(source)
     }
 
     @Bean
