@@ -1,6 +1,9 @@
 package io.github.sevenparadigms.abac.security.abac.service
 
-import io.github.sevenparadigms.abac.security.abac.data.*
+import io.github.sevenparadigms.abac.security.abac.data.AbacControlContext
+import io.github.sevenparadigms.abac.security.abac.data.AbacEnvironment
+import io.github.sevenparadigms.abac.security.abac.data.AbacRuleRepository
+import io.github.sevenparadigms.abac.security.abac.data.AbacSubject
 import io.github.sevenparadigms.abac.security.context.ExchangeContext
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
@@ -13,7 +16,6 @@ import org.springframework.stereotype.Service
 @Service
 class AbacRulePermissionService(
     private val abacRuleRepository: AbacRuleRepository,
-    private val expressionParserCache: ExpressionParserCache,
     private val exchangeContext: ExchangeContext
 ) : DenyAllPermissionEvaluator() {
     override fun hasPermission(authentication: Authentication, domainObject: Any, action: Any): Boolean {
@@ -33,16 +35,8 @@ class AbacRulePermissionService(
                 subject, domainObject, action, AbacEnvironment(ip = exchangeContext.getRemoteIp(subject.username))
             )
             result = abacRuleRepository.findAllByDomainType(domainObject.javaClass.simpleName)
-                .filter { abacRule: AbacRule ->
-                    expressionParserCache.parseExpression(abacRule.target).getValue(
-                        context,
-                        Boolean::class.java
-                    )!!
-                }
-                .any { abacRule: AbacRule ->
-                    expressionParserCache.parseExpression(abacRule.condition)
-                        .getValue(context, Boolean::class.java)!!
-                }
+                .filter { it.target.getValue(context, Boolean::class.java)!! }
+                .any { it.condition.getValue(context, Boolean::class.java)!! }
                 .awaitFirst()
         }
         return result

@@ -30,7 +30,6 @@ import java.time.Duration
 
 @Configuration
 class OpaqueConfig : AllNestedConditions(ConfigurationCondition.ConfigurationPhase.PARSE_CONFIGURATION) {
-
     @Bean
     @ConditionalOnMissingBean(value = [ApplicationListener::class],
         parameterizedContainer = [RevokeTokenEvent::class])

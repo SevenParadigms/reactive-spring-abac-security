@@ -1,8 +1,8 @@
 package io.github.sevenparadigms.abac.security.abac.service
 
-import io.github.sevenparadigms.abac.security.support.config.ServiceConfiguration
 import io.github.sevenparadigms.abac.security.abac.data.AbacRule
 import io.github.sevenparadigms.abac.security.abac.data.AbacRuleRepository
+import io.github.sevenparadigms.abac.security.support.config.ServiceConfiguration
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -10,6 +10,7 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.r2dbc.repository.query.Dsl
+import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.GrantedAuthority
@@ -18,7 +19,6 @@ import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import reactor.core.publisher.Flux
 import java.util.*
-import kotlin.collections.ArrayList
 
 @ExtendWith(SpringExtension::class)
 @ContextConfiguration(classes = [ServiceConfiguration::class])
@@ -82,14 +82,14 @@ class AbacRulePermissionServiceTest {
 
     private fun createAbacRules(): Flux<AbacRule> {
         val rules: MutableList<AbacRule> = ArrayList()
-
+        val parser = SpelExpressionParser()
         rules.add(
             AbacRule(
                 UUID.randomUUID(),
                 "rule",
                 "Dsl",
-                "action == 'findAll' and subject.roles.contains('ROLE_ADMIN')",
-                "domainObject.sort == 'id:desc'"
+                parser.parseExpression("action == 'findAll' and subject.roles.contains('ROLE_ADMIN')"),
+                parser.parseExpression("domainObject.sort == 'id:desc'")
             )
         )
         rules.add(
@@ -97,8 +97,8 @@ class AbacRulePermissionServiceTest {
                 UUID.randomUUID(),
                 "ip rule",
                 "Dsl",
-                "action == 'findAll' and environment.ip == '127.0.0.1'",
-                "domainObject.sort == 'id:desc'"
+                parser.parseExpression("action == 'findAll' and environment.ip == '127.0.0.1'"),
+                parser.parseExpression("domainObject.sort == 'id:desc'")
             )
         )
         return Flux.fromIterable(rules)

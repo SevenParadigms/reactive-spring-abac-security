@@ -3,7 +3,6 @@ package io.github.sevenparadigms.abac.security.support.config
 import io.github.sevenparadigms.abac.Constants
 import io.github.sevenparadigms.abac.security.abac.data.AbacRuleRepository
 import io.github.sevenparadigms.abac.security.abac.service.AbacRulePermissionService
-import io.github.sevenparadigms.abac.security.abac.service.ExpressionParserCache
 import io.github.sevenparadigms.abac.security.context.ExchangeContext
 import io.github.sevenparadigms.abac.security.support.model.ServerWebExchangeImpl
 import org.mockito.Mockito
@@ -15,12 +14,6 @@ import org.springframework.context.annotation.PropertySource
 @TestConfiguration
 @PropertySource("classpath:application.yml", factory = YamlPropertySourceFactory::class)
 class ServiceConfiguration {
-
-    @Bean
-    fun expressionParserCache(): ExpressionParserCache {
-        return ExpressionParserCache()
-    }
-
     @Bean
     fun abacRuleRepository(): AbacRuleRepository {
         return Mockito.mock(AbacRuleRepository::class.java)
@@ -46,10 +39,9 @@ class ServiceConfiguration {
     @Bean
     fun abacRulePermissionService(
         exchangeContext: ExchangeContext,
-        abacRuleRepository: AbacRuleRepository,
-        expressionParserCache: ExpressionParserCache
+        abacRuleRepository: AbacRuleRepository
     ): AbacRulePermissionService {
-        return AbacRulePermissionService(abacRuleRepository, expressionParserCache, exchangeContext)
+        return AbacRulePermissionService(abacRuleRepository, exchangeContext)
     }
 
 }
