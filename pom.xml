@@ -71,7 +71,7 @@
         <kotlin.version>1.6.10</kotlin.version>
         <kotlinx.version>1.6.0-native-mt</kotlinx.version>
 
-        <r2dbc-dsl.version>4.6.12</r2dbc-dsl.version>
+        <r2dbc-dsl.version>4.6.13</r2dbc-dsl.version>
         <jsonwebtoken.version>0.11.2</jsonwebtoken.version>
 
         <jackson.version>2.13.2</jackson.version>
@@ -290,14 +290,12 @@
             <scope>test</scope>
         </dependency>
 
-
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test-junit</artifactId>
             <version>${kotlin.version}</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
