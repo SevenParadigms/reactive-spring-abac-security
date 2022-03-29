@@ -7,7 +7,7 @@
     <groupId>io.github.sevenparadigms</groupId>
     <artifactId>reactive-spring-abac-security</artifactId>
     <packaging>jar</packaging>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -67,16 +67,17 @@
     </scm>
 
     <properties>
-        <spring.core>5.3.16</spring.core>
+        <spring.core>5.3.17</spring.core>
         <kotlin.version>1.6.10</kotlin.version>
         <kotlinx.version>1.6.0-native-mt</kotlinx.version>
 
-        <r2dbc-dsl.version>4.6.14</r2dbc-dsl.version>
+        <r2dbc-dsl.version>4.6.15</r2dbc-dsl.version>
         <jsonwebtoken.version>0.11.2</jsonwebtoken.version>
 
         <jackson.version>2.13.2</jackson.version>
-        <dokka.version>1.5.31</dokka.version>
-        <reactor.version>3.4.15</reactor.version>
+        <jackson-databind.version>2.13.2.1</jackson-databind.version>
+        <dokka.version>1.6.10</dokka.version>
+        <reactor.version>3.4.16</reactor.version>
         <guava.version>31.1-jre</guava.version>
 
         <java.version>11</java.version>
@@ -225,7 +226,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson-databind.version}</version>
             <scope>compile</scope>
         </dependency>
 
