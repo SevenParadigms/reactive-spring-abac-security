@@ -1,11 +1,13 @@
 package io.github.sevenparadigms.abac.security.opaque.service.impl
 
+import io.github.sevenparadigms.abac.Constants.TEST_USER
 import io.github.sevenparadigms.abac.security.auth.encrypt.JwtTokenProvider
 import io.github.sevenparadigms.abac.security.opaque.data.TokenIntrospectionRequest
 import io.github.sevenparadigms.abac.security.opaque.data.TokenIntrospectionSuccessResponse
 import io.github.sevenparadigms.abac.security.opaque.data.TokenStatus
 import io.github.sevenparadigms.abac.security.opaque.service.TokenAuthorizationService
 import io.github.sevenparadigms.abac.security.support.config.OpaqueCacheConfiguration
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -31,10 +33,10 @@ class TokenAuthorizationServiceImplTest {
     @Test
     fun `validateToken valid token`() {
         val authorities = ArrayList<SimpleGrantedAuthority>()
-        authorities.add(SimpleGrantedAuthority("USER"))
+        authorities.add(SimpleGrantedAuthority(TEST_USER))
 
         val correctToken = jwtTokenProvider.getAuthToken(UsernamePasswordAuthenticationToken(
-            this.createUser(authorities), "pass", authorities
+            this.createUser(authorities), TEST_USER, authorities
         ))
         val response = tokenAuthorizationService.validateToken(TokenIntrospectionRequest(correctToken))
 
@@ -75,8 +77,8 @@ class TokenAuthorizationServiceImplTest {
 
     private fun createUser(authorities: List<SimpleGrantedAuthority>): User {
         return User(
-            "user",
-            "",
+            TEST_USER,
+            TEST_USER,
             authorities
         )
     }

@@ -10,12 +10,12 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
 @Component
-@ConditionalOnProperty("spring.security.secret")
+@ConditionalOnProperty("spring.security.jwt.secret")
 class PBKDF2Encoder : PasswordEncoder {
-    @Value("\${spring.security.secret}")
+    @Value("\${spring.security.jwt.secret}")
     lateinit var secret: String
 
-    @Value("\${spring.security.iteration}")
+    @Value("\${spring.security.jwt.iteration}")
     lateinit var iteration: String
 
     override fun encode(cs: CharSequence) = Base64.getEncoder().encodeToString(

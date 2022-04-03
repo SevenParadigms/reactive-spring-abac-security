@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Primary
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 
 @Configuration
-@ConditionalOnProperty("spring.security.public")
+@ConditionalOnProperty("spring.security.jwt.public")
 class NoAuthenticationConfiguration {
     @Bean
     @Primary

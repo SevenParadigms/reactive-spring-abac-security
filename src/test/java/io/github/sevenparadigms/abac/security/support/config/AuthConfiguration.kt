@@ -45,7 +45,7 @@ class AuthConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty("spring.security.secret")
+    @ConditionalOnProperty("spring.security.jwt.secret")
     fun reactiveAuthenticateManager(
         mockUserDetailsService: ReactiveUserDetailsService,
         passwordEncoder: PasswordEncoder

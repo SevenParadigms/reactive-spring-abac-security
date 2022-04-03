@@ -12,7 +12,7 @@ object Constants {
     const val AUTHORIZE_ROLES = "X-Roles"
     const val AUTHORIZE_IP = "X-Forwarded-For"
 
-    const val AUTHORIZE_PROPERTY = "spring.security.$AUTHORIZE_KEY"
+    const val AUTHORIZE_PROPERTY = "spring.security.jwt.$AUTHORIZE_KEY"
 
     const val BEARER = "Bearer "
     const val REQUEST = "Request"
@@ -20,7 +20,7 @@ object Constants {
 
     const val PRINCIPAL = "Principal"
 
-    const val SKIP_TOKEN_PROPERTY = "spring.security.skip-token-validation"
+    const val SKIP_TOKEN_PROPERTY = "spring.security.jwt.skip-token-validation"
 
     const val TOKEN_CACHE = "tokens"
     const val TOKEN_INTROSPECTION_STATUS = "token_status"
@@ -35,4 +35,6 @@ object Constants {
         "/webjars/**",
         "/v3/api-docs/**"
     )
+
+    const val TEST_USER = "test_user"
 }

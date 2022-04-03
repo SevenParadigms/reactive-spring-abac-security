@@ -1,12 +1,36 @@
 spring:
   security:
     abac.url: r2dbc:postgresql://postgres:postgres@localhost/abac_rules?schema=public
-    iteration: 512
-    length: 720
-    secret: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTYzMDYxMDI5NX0.m0XU2NvGaAtzptgLfmptj3Fk7S1e1NrBTYTqBAjHoPI8lbRB7z3J52FiLRw-PUZPjQusDt19RszrUQDsZoVXeQ
-    expiration: 1800
-    X-User-Id: true
-    introspection:
+    jwt:
+      keystore-path: gateway.p12
+      keystore-alias: gateway
+      keystore-password: changeit
+      iteration: 512
+      length: 720
       secret: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTYzMDYxMDI5NX0.m0XU2NvGaAtzptgLfmptj3Fk7S1e1NrBTYTqBAjHoPI8lbRB7z3J52FiLRw-PUZPjQusDt19RszrUQDsZoVXeQ
+      expiration: 1800
+      X-User-Id: true
+      public:
+        MIIDeTCCAmGgAwIBAgIEFzIFujANBgkqhkiG9w0BAQsFADBtMQswCQYDVQQGEwJG
+        UjEQMA4GA1UECBMHVW5rbm93bjEOMAwGA1UEBxMFUGFyaXMxFzAVBgNVBAoTDlNl
+        dmVucGFyYWRpZ21zMQ8wDQYDVQQLEwZnaXRodWIxEjAQBgNVBAMTCUxhbyBUc2lu
+        ZzAeFw0yMjA0MDMxODQyMDRaFw0zMjAzMzExODQyMDRaMG0xCzAJBgNVBAYTAkZS
+        MRAwDgYDVQQIEwdVbmtub3duMQ4wDAYDVQQHEwVQYXJpczEXMBUGA1UEChMOU2V2
+        ZW5wYXJhZGlnbXMxDzANBgNVBAsTBmdpdGh1YjESMBAGA1UEAxMJTGFvIFRzaW5n
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAjtdx8tYDDRFUpw3oJdFx
+        Avcho5ytRQt1PZUymRoioO28RO9mXdrhJgKXA2MFlmjnzD/yRwR/PqZcneKz7rKx
+        kN14HYQNxgKrUFNZwtAtePiTAcAPy4NqtVeE8pS5djQ+bIqlpnJUhYvtK1vDlMkS
+        KUJr/N2/sRAQcH8fQiPG5vwI+MpHjWjqjjM+ycslPWqQp2QguaqxMd4IAjL8fZnP
+        2LGyCZdZCRbtu3TknW+zmgVMF9hiEdtUX677cBfamnslpCUe4ACI5aziwua5GQZV
+        DwfaFf6kOAtKcEa7CUy3axCs82KVa3lfPW/b8ALWDllbjYLZWVwNfvR5bKFFg2tk
+        GQIDAQABoyEwHzAdBgNVHQ4EFgQU29M6xK0D1NAvRRE1MApZv4Qr0l8wDQYJKoZI
+        hvcNAQELBQADggEBADCIzI/jC+3dXnhdca2ozwH6Oq46coT61tmLnCmlpTvE352w
+        g/FhpujILUOIwaShKjgIiBA1u1DYrZM1m9BoZ6/YuXa9OYpCK0jamuug4Vnz0bIm
+        fQIQPfCMJcouwc4pCm8jAzWSo8xfTJ/yhUnqt7/NQkGuSWsHVZN9O1leKVa2xTEU
+        C5APTpX7Rj2+mU8c/fDzFA1m+LXYp2T3dbi3yVOTzSwRkE84sE18fdgRuvJfpmxL
+        W3BuVKQ9/1bzpcTK1onKw7WNqrjCoO37G+d42IeDzXMdDjyI3POYYy8g/o//sp6O
+        JhhMDEwt2aEAKEVlQxYzgMBn8HeUQrHSeX+ML8Q=
+      introspection:
+        secret: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTYzMDYxMDI5NX0.m0XU2NvGaAtzptgLfmptj3Fk7S1e1NrBTYTqBAjHoPI8lbRB7z3J52FiLRw-PUZPjQusDt19RszrUQDsZoVXeQ
   main:
     allow-bean-definition-overriding: true

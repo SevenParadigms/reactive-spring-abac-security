@@ -46,6 +46,7 @@ class EventListenerImplTest {
         val createdToken = createToken()
 
         multicaster.multicastEvent(createdToken)
+        Thread.sleep(100)
         verify(mockCacheService).revokeSyncToken("new")
     }
 

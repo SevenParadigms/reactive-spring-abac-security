@@ -54,7 +54,7 @@ class WebFluxConfig : WebFluxConfigurer {
         it.addServerCustomizers(
             NettyServerCustomizer { server: HttpServer ->
                 server.doOnConnection { connection: Connection ->
-                    connection.addHandler(
+                    connection.addHandlerFirst(
                         object : IdleStateHandler(0, 0, 0) {
                             override fun channelIdle(ctx: ChannelHandlerContext, evt: IdleStateEvent) {
                                 ctx.fireExceptionCaught(

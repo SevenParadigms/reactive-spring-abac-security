@@ -33,7 +33,7 @@ class OpaqueConfig : AllNestedConditions(ConfigurationCondition.ConfigurationPha
     @Bean
     @ConditionalOnMissingBean(value = [ApplicationListener::class],
         parameterizedContainer = [RevokeTokenEvent::class])
-    @ConditionalOnProperty(name = ["spring.security.introspection.secret"])
+    @ConditionalOnProperty(name = ["spring.security.jwt.introspection.secret"])
     fun eventListener(
         cacheService: TokenCacheService,
     ): ApplicationListener<RevokeTokenEvent> {
@@ -41,24 +41,24 @@ class OpaqueConfig : AllNestedConditions(ConfigurationCondition.ConfigurationPha
     }
 
     @Bean
-    @ConditionalOnProperty(name = ["spring.security.introspection.secret"])
+    @ConditionalOnProperty(name = ["spring.security.jwt.introspection.secret"])
     fun opaqueTokenValidator(
-        @Value("\${spring.security.introspection.secret:}") secret: String,
-        @Value("\${spring.security.expiration:1800}") expiration: String,
+        @Value("\${spring.security.jwt.introspection.secret:}") secret: String,
+        @Value("\${spring.security.jwt.expiration:1800}") expiration: String,
     ): OpaqueTokenValidator {
         return OpaqueTokenValidator(expiration = expiration, secret = secret)
     }
 
     @Bean
     @ConditionalOnMissingBean(type = ["CacheManager"])
-    @ConditionalOnProperty(name = ["spring.security.introspection.cache-token"], havingValue = "true")
-    fun cacheManager(@Value("\${spring.security.expiration:1800}") expiration: String): CacheManager {
+    @ConditionalOnProperty(name = ["spring.security.jwt.introspection.cache-token"], havingValue = "true")
+    fun cacheManager(@Value("\${spring.security.jwt.expiration:1800}") expiration: String): CacheManager {
         return TokenCacheManager(expiration = expiration)
     }
 
     @Bean
     @ConditionalOnBean(CacheManager::class)
-    @ConditionalOnProperty(name = ["spring.security.introspection.cache-token"], havingValue = "true")
+    @ConditionalOnProperty(name = ["spring.security.jwt.introspection.cache-token"], havingValue = "true")
     fun tokenCacheService(
         validator: OpaqueTokenValidator,
         cacheManager: CacheManager,
@@ -68,7 +68,7 @@ class OpaqueConfig : AllNestedConditions(ConfigurationCondition.ConfigurationPha
 
     @Bean
     @ConditionalOnMissingBean(type = ["TokenAuthorizationService"])
-    @ConditionalOnProperty(name = ["spring.security.introspection.uri"])
+    @ConditionalOnProperty(name = ["spring.security.jwt.introspection.uri"])
     fun tokenAuthorizationService(
         validator: OpaqueTokenValidator,
     ): TokenAuthorizationService {
@@ -76,12 +76,12 @@ class OpaqueConfig : AllNestedConditions(ConfigurationCondition.ConfigurationPha
     }
 
     @Bean
-    @ConditionalOnProperty(name = ["spring.security.introspection.secret"])
+    @ConditionalOnProperty(name = ["spring.security.jwt.introspection.secret"])
     fun reactiveOpaqueTokenIntrospector(
-        @Value("\${spring.security.introspection.uri:}") introspectionUrl: String,
-        @Value("\${spring.security.introspection.secret:}") introspectionSecret: String,
-        @Value("\${spring.security.introspection.client-id:}") introspectionClientId: String,
-        @Value("\${spring.security.introspection.response-timeout:60}") responseTimeout: String,
+        @Value("\${spring.security.jwt.introspection.uri:}") introspectionUrl: String,
+        @Value("\${spring.security.jwt.introspection.secret:}") introspectionSecret: String,
+        @Value("\${spring.security.jwt.introspection.client-id:}") introspectionClientId: String,
+        @Value("\${spring.security.jwt.introspection.response-timeout:60}") responseTimeout: String,
     ): ReactiveOpaqueTokenIntrospector {
         var cacheService: TokenCacheServiceImpl? = null
         try {

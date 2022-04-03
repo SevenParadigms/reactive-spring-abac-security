@@ -1,12 +1,14 @@
 package io.github.sevenparadigms.abac.security.auth.encrypt
 
+import io.github.sevenparadigms.abac.Constants
 import io.github.sevenparadigms.abac.Constants.AUTHORITIES_KEY
 import io.jsonwebtoken.*
-import io.jsonwebtoken.jackson.io.JacksonDeserializer
 import io.jsonwebtoken.security.SignatureException
 import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils
 import org.sevenparadigms.kotlin.common.error
+import org.sevenparadigms.kotlin.common.loadResource
+import org.sevenparadigms.kotlin.common.remove
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -15,27 +17,53 @@ import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
 import org.springframework.stereotype.Component
-import java.security.KeyFactory
-import java.security.spec.X509EncodedKeySpec
+import java.io.ByteArrayInputStream
+import java.io.InputStream
+import java.security.KeyStore
+import java.security.KeyStore.PasswordProtection
+import java.security.KeyStore.ProtectionParameter
+import java.security.cert.CertificateFactory
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
 import kotlin.streams.toList
 
+
 @Component
 class JwtTokenProvider {
-    @Value("\${spring.security.secret:}")
+    @Value("\${spring.security.jwt.secret:}")
     lateinit var seckey: String
 
-    @Value("\${spring.security.public:}")
+    @Value("\${spring.security.jwt.public:}")
     lateinit var pubkey: String
 
-    @Value("\${spring.security.expiration:}")
+    @Value("\${spring.security.jwt.expiration:}")
     lateinit var expiration: String
+
+    @Value("\${spring.security.jwt.algorithm:HS512}")
+    lateinit var algorithm: String
+
+    @Value("\${spring.security.jwt.keystore-path:}")
+    lateinit var keyPath: String
+
+    @Value("\${spring.security.jwt.keystore-alias:}")
+    lateinit var keystoreAlias: String
+
+    @Value("\${spring.security.jwt.keystore-password:}")
+    lateinit var keyPassword: String
 
     fun getAuthToken(authentication: Authentication): String = Jwts.builder()
         .setSubject(authentication.name)
         .claim(AUTHORITIES_KEY, authentication.authorities.stream().map { it.authority }.toList())
-        .signWith(SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.HS512.jcaName))
+        .signWith(
+            if (ObjectUtils.isNotEmpty(keyPath) && ObjectUtils.isNotEmpty(keyPassword) && authentication.name != Constants.TEST_USER) {
+                val keyStore = KeyStore.getInstance("PKCS12")
+                keyStore.load(ByteArrayInputStream(keyPath.loadResource()), keyPassword.toCharArray())
+                val entryPassword: ProtectionParameter = PasswordProtection(keyPassword.toCharArray())
+                val privateKeyEntry = keyStore.getEntry(keystoreAlias, entryPassword) as KeyStore.PrivateKeyEntry
+                privateKeyEntry.privateKey
+            } else
+                SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
+        )
         .setExpiration(Date(Date().time + expiration.toLong() * 1000))
         .compact()
 
@@ -49,13 +77,14 @@ class JwtTokenProvider {
 
     fun getClaims(authToken: String): Claims {
         try {
-            val key = if (ObjectUtils.isNotEmpty(seckey) && ObjectUtils.isNotEmpty(expiration))
-                SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.HS512.jcaName)
+            val key = if (ObjectUtils.isEmpty(pubkey) && ObjectUtils.isNotEmpty(seckey) && ObjectUtils.isNotEmpty(expiration))
+                SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
             else
-                if (ObjectUtils.isNotEmpty(pubkey.trim())) {
-                    val keySpec = X509EncodedKeySpec(Base64.getDecoder().decode(pubkey))
-                    KeyFactory.getInstance("RSA").generatePublic(keySpec)
-                } else throw RuntimeException("Property with public key[spring.security.public] not found")
+                if (ObjectUtils.isNotEmpty(pubkey)) {
+                    val certificate: InputStream = ByteArrayInputStream(Base64.getDecoder().decode(pubkey.remove("[\\s\\r\\n]")))
+                    CertificateFactory.getInstance("X.509").generateCertificate(certificate).publicKey
+                } else
+                    throw RuntimeException("Property with public key[spring.security.jwt.public] not found")
             return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -72,13 +101,5 @@ class JwtTokenProvider {
             error("JWT token compact of handler are invalid trace: {}", e)
         }
         throw BadCredentialsException("Invalid token")
-    }
-
-    companion object {
-        @JvmStatic
-        fun getPrincipal(authToken: String): User =
-            Jwts.parserBuilder()
-                .deserializeJsonWith(JacksonDeserializer(mutableMapOf("user" to User::class.java) as Map<String, Class<User>>))
-                .build().parseClaimsJwt(authToken).body.get("user", User::class.java)
     }
 }

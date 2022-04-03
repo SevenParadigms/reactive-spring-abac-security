@@ -17,3 +17,27 @@ The Maven Central dependency instead of the library `spring-data-abac-security`:
 
 The proposed library on the client side activates Spring Security with the ABAC security model, while caching data by token, accessing the authorization service only once. The token revocation is marked in the cache through the Spring Event, the initiation of which is left to the infrastructure logic when the user session ends.
 
+Properties:
+[source,yaml]
+----
+spring.security:
+  abac.url: r2dbc:postgresql://lgn:psw@ip/abac_rules?schema=public
+  jwt:
+      X-User-Id: true
+      secret: 12345678
+      iteration: 512
+      length: 720
+      expiration: 1800
+      skip-token-validation: false
+      public: <base64 of pem as public key>
+      keystore-path: <filename.p12 from resource>
+      keystore-alias: key alias
+      keystore-password: changeit
+      algorithm: HS512 # in default
+      introspection:
+        cache-token: abcdefg
+        uri: http://auth-service
+        secret: 12345678
+        client-id: gateway
+        response-timeout: 300
+----

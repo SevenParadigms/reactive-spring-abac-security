@@ -31,7 +31,7 @@ class OpaqueCacheConfiguration {
 
     @Bean("validator")
     fun validator(
-        @Value("\${spring.security.introspection.secret:default}") secret: String,
+        @Value("\${spring.security.jwt.introspection.secret:default}") secret: String,
     ): OpaqueTokenValidator {
         return OpaqueTokenValidator("1800", secret)
     }

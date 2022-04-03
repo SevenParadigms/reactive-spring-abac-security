@@ -21,7 +21,7 @@ class ServiceConfiguration {
 
     @Bean
     fun exchangeContext(
-        @Value("\${spring.security.expiration:300}") expiration: String
+        @Value("\${spring.security.jwt.expiration:300}") expiration: String
     ): ExchangeContext {
         val exchangeContext = ExchangeContext(expiration)
 

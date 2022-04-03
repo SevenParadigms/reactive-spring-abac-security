@@ -18,7 +18,7 @@ import java.time.Duration
 
 @Component
 class ExchangeContext(
-    @Value("\${spring.security.expiration:300}") var expiration: String
+    @Value("\${spring.security.jwt.expiration:300}") var expiration: String
 ) {
 
     val attributes: Cache<String, ServerWebExchange> by lazy {
