@@ -8,6 +8,7 @@ import io.github.sevenparadigms.abac.security.context.ExchangeContext
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
 import org.sevenparadigms.kotlin.common.debug
+import org.sevenparadigms.kotlin.common.objectToJson
 import org.springframework.security.access.expression.DenyAllPermissionEvaluator
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.userdetails.User
@@ -19,7 +20,7 @@ class AbacRulePermissionService(
     private val exchangeContext: ExchangeContext
 ) : DenyAllPermissionEvaluator() {
     override fun hasPermission(authentication: Authentication, domainObject: Any, action: Any): Boolean {
-        debug("Secure user ${authentication.name} action '$action' on object $domainObject")
+        debug("Secure user ${authentication.name} action '$action' on object ${domainObject.objectToJson()}")
         val user = authentication.principal as User
         return checkIn(
             AbacSubject(user.username, user.authorities.map { it.authority }.toSet()),

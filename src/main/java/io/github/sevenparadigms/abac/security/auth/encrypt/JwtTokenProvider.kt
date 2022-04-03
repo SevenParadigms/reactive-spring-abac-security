@@ -22,6 +22,7 @@ import java.io.InputStream
 import java.security.KeyStore
 import java.security.KeyStore.PasswordProtection
 import java.security.KeyStore.ProtectionParameter
+import java.security.PrivateKey
 import java.security.cert.CertificateFactory
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
@@ -51,16 +52,24 @@ class JwtTokenProvider {
     @Value("\${spring.security.jwt.keystore-password:}")
     lateinit var keyPassword: String
 
+    private var privateKey: PrivateKey? = null
+
+    private fun getPrivateKey() =
+        if (privateKey == null) {
+            val keyStore = KeyStore.getInstance("PKCS12")
+            keyStore.load(ByteArrayInputStream(keyPath.loadResource()), keyPassword.toCharArray())
+            val entryPassword: ProtectionParameter = PasswordProtection(keyPassword.toCharArray())
+            val privateKeyEntry = keyStore.getEntry(keystoreAlias, entryPassword) as KeyStore.PrivateKeyEntry
+            privateKeyEntry.privateKey
+        } else
+            privateKey
+
     fun getAuthToken(authentication: Authentication): String = Jwts.builder()
         .setSubject(authentication.name)
         .claim(AUTHORITIES_KEY, authentication.authorities.stream().map { it.authority }.toList())
         .signWith(
             if (ObjectUtils.isNotEmpty(keyPath) && ObjectUtils.isNotEmpty(keyPassword) && authentication.name != Constants.TEST_USER) {
-                val keyStore = KeyStore.getInstance("PKCS12")
-                keyStore.load(ByteArrayInputStream(keyPath.loadResource()), keyPassword.toCharArray())
-                val entryPassword: ProtectionParameter = PasswordProtection(keyPassword.toCharArray())
-                val privateKeyEntry = keyStore.getEntry(keystoreAlias, entryPassword) as KeyStore.PrivateKeyEntry
-                privateKeyEntry.privateKey
+                getPrivateKey()
             } else
                 SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
         )
@@ -77,14 +86,19 @@ class JwtTokenProvider {
 
     fun getClaims(authToken: String): Claims {
         try {
-            val key = if (ObjectUtils.isEmpty(pubkey) && ObjectUtils.isNotEmpty(seckey) && ObjectUtils.isNotEmpty(expiration))
+            val key = if (ObjectUtils.isEmpty(keyPath) && ObjectUtils.isEmpty(pubkey) && ObjectUtils.isNotEmpty(seckey))
                 SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
             else
                 if (ObjectUtils.isNotEmpty(pubkey)) {
-                    val certificate: InputStream = ByteArrayInputStream(Base64.getDecoder().decode(pubkey.remove("[\\s\\r\\n]")))
+                    val certificate: InputStream =
+                        ByteArrayInputStream(Base64.getDecoder().decode(pubkey.remove("[\\s\\r\\n]")))
                     CertificateFactory.getInstance("X.509").generateCertificate(certificate).publicKey
                 } else
-                    throw RuntimeException("Property with public key[spring.security.jwt.public] not found")
+                    if (ObjectUtils.isNotEmpty(keyPath)) {
+                        getPrivateKey()
+                    } else {
+                        throw RuntimeException("Property with public key[spring.security.jwt.public] not found")
+                    }
             return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()

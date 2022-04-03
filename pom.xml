@@ -7,7 +7,7 @@
     <groupId>io.github.sevenparadigms</groupId>
     <artifactId>reactive-spring-abac-security</artifactId>
     <packaging>jar</packaging>
-    <version>1.2.4</version>
+    <version>1.2.5</version>
 
     <parent>
         <groupId>org.springframework.boot</groupId>

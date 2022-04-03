@@ -11,7 +11,7 @@ The Maven Central dependency instead of the library `spring-data-abac-security`:
 <dependency>
     <groupId>io.github.sevenparadigms</groupId>
     <artifactId>reactive-spring-abac-security</artifactId>
-    <version>1.2.3</version>
+    <version>1.2.5</version>
 </dependency>
 ----
 
@@ -27,7 +27,7 @@ spring.security:
       secret: 12345678
       iteration: 512
       length: 720
-      expiration: 1800
+      expiration: 1800  # seconds
       skip-token-validation: false
       public: <base64 of pem as public key>
       keystore-path: <filename.p12 from resource>

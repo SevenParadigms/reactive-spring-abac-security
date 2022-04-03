@@ -11,10 +11,10 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.crypto.password.PasswordEncoder
 
 @Configuration
-@ConditionalOnProperty("spring.security.jwt.secret")
+@ConditionalOnProperty("spring.security.abac.url")
 class AuthenticationConfiguration {
     @Bean
-    fun userRepository(@Value("\${spring.security.jwt.abac.url}") url: String): UserRepository = R2dbcUtils.getRepository(url, UserRepository::class.java)
+    fun userRepository(@Value("\${spring.security.abac.url}") url: String): UserRepository = R2dbcUtils.getRepository(url, UserRepository::class.java)
 
     @Bean
     fun authenticationManager(
