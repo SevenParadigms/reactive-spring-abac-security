@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.core.env.Environment
 import org.springframework.data.r2dbc.config.Beans
 import org.springframework.data.r2dbc.support.R2dbcUtils
 import org.springframework.http.HttpMethod
@@ -40,10 +41,13 @@ class SecurityConfig(
     fun securityWebFilterChain(
         http: ServerHttpSecurity,
         authenticationWebFilter: AuthenticationWebFilter,
-        abacRulePermissionService: AbacRulePermissionService,
+        environment: Environment,
         expressionHandler: DefaultMethodSecurityExpressionHandler
     ): SecurityWebFilterChain {
-        expressionHandler.setPermissionEvaluator(abacRulePermissionService)
+        val abacRulePermissionService = Beans.of(AbacRulePermissionService::class.java, null)
+        if (abacRulePermissionService != null) {
+            expressionHandler.setPermissionEvaluator(abacRulePermissionService)
+        }
         http.csrf().disable()
             .headers().frameOptions().disable()
             .cache().disable()

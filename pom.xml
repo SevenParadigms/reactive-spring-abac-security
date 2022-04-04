@@ -7,7 +7,7 @@
     <groupId>io.github.sevenparadigms</groupId>
     <artifactId>reactive-spring-abac-security</artifactId>
     <packaging>jar</packaging>
-    <version>1.2.5</version>
+    <version>1.2.6</version>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -68,7 +68,7 @@
 
     <properties>
         <kotlinx.version>1.6.0-native-mt</kotlinx.version>
-        <r2dbc-dsl.version>4.6.18</r2dbc-dsl.version>
+        <r2dbc-dsl.version>4.7.0</r2dbc-dsl.version>
         <jsonwebtoken.version>0.11.2</jsonwebtoken.version>
         <jackson-databind.version>2.13.2.2</jackson-databind.version>
         <dokka.version>1.6.10</dokka.version>

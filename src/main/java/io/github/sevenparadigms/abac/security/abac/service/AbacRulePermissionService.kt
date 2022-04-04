@@ -9,12 +9,14 @@ import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
 import org.sevenparadigms.kotlin.common.debug
 import org.sevenparadigms.kotlin.common.objectToJson
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.security.access.expression.DenyAllPermissionEvaluator
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.userdetails.User
 import org.springframework.stereotype.Service
 
 @Service
+@ConditionalOnProperty("spring.security.abac.url")
 class AbacRulePermissionService(
     private val abacRuleRepository: AbacRuleRepository,
     private val exchangeContext: ExchangeContext
