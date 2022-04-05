@@ -6,6 +6,8 @@ object Constants {
     const val ANONYMOUS = "ROLE_ANONYMOUS"
 
     const val AUTHORITIES_KEY = "auth"
+    const val AUTHORITIES_USER = "sub"
+    const val AUTHORITIES_EXPIRE = "exp"
 
     const val AUTHORIZE_KEY = "X-User-Id"
     const val AUTHORIZE_LOGIN = "X-Login"

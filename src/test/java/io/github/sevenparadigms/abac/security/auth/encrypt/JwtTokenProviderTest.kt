@@ -4,8 +4,10 @@ import io.github.sevenparadigms.abac.security.support.config.AuthConfiguration
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.internal.matchers.apachecommons.ReflectionEquals
+import org.sevenparadigms.cache.hazelcast.HazelcastCacheConfiguration
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.data.r2dbc.config.Beans
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
@@ -14,12 +16,16 @@ import org.springframework.security.core.userdetails.User
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
-@ContextConfiguration(classes = [AuthConfiguration::class])
+@ContextConfiguration(classes = [HazelcastCacheConfiguration::class, AuthConfiguration::class])
 @ExtendWith(SpringExtension::class)
 class JwtTokenProviderTest {
 
     @Autowired
     private lateinit var jwtTokenProvider: JwtTokenProvider
+
+    @Autowired
+    private lateinit var context: ApplicationContext
+
     private val authentication = createAuthentication()
 
     @Test
@@ -55,14 +61,10 @@ class JwtTokenProviderTest {
 
     @Test
     fun getAuthentication() {
+        Beans.setAndGetContext(context)
         val token = jwtTokenProvider.getAuthToken(authentication)
         val authentication = jwtTokenProvider.getAuthentication(token)
-        Assertions.assertTrue(
-            ReflectionEquals(
-                authentication,
-                "credentials"
-            ).matches(jwtTokenProvider.getAuthentication(token))
-        )
+        Assertions.assertTrue(authentication.credentials.toString() == "user")
         Assertions.assertEquals(authentication.authorities.map { it.authority }, listOf("role"))
     }
 

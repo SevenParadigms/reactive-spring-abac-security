@@ -20,7 +20,7 @@ class TokenAuthorizationServiceImpl(
                 val claims = this.validator.getClaims(it)
                 if (claims is Claims) {
                     sink.next(this.createSuccessResponse(claims))
-                } else sink.next(TokenIntrospectionSuccessResponse(status = claims.get(Constants.TOKEN_INTROSPECTION_STATUS) as TokenStatus))
+                } else sink.next(TokenIntrospectionSuccessResponse(status = claims[Constants.TOKEN_INTROSPECTION_STATUS] as TokenStatus))
             }
     }
     
