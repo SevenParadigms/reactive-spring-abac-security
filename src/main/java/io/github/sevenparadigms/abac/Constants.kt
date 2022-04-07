@@ -9,6 +9,8 @@ object Constants {
     const val AUTHORITIES_USER = "sub"
     const val AUTHORITIES_EXPIRE = "exp"
 
+    const val JWT_CACHE = "jwt"
+
     const val AUTHORIZE_KEY = "X-User-Id"
     const val AUTHORIZE_LOGIN = "X-Login"
     const val AUTHORIZE_ROLES = "X-Roles"
@@ -23,10 +25,6 @@ object Constants {
     const val PRINCIPAL = "Principal"
 
     const val SKIP_TOKEN_PROPERTY = "spring.security.jwt.skip-token-validation"
-
-    const val TOKEN_CACHE = "tokens"
-    const val TOKEN_INTROSPECTION_STATUS = "token_status"
-    const val TOKEN_INTROSPECTION_SCOPE = "scope"
 
     val whitelist = arrayOf(
         "/actuator/**",

@@ -4,13 +4,17 @@ import io.github.sevenparadigms.abac.Constants
 import io.github.sevenparadigms.abac.Constants.AUTHORITIES_EXPIRE
 import io.github.sevenparadigms.abac.Constants.AUTHORITIES_KEY
 import io.github.sevenparadigms.abac.Constants.AUTHORITIES_USER
+import io.github.sevenparadigms.abac.Constants.JWT_CACHE
+import io.github.sevenparadigms.abac.security.auth.data.RevokeTokenEvent
 import io.jsonwebtoken.*
 import io.jsonwebtoken.security.SignatureException
+import org.apache.commons.beanutils.ConvertUtils
 import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils
 import org.sevenparadigms.kotlin.common.*
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cache.CacheManager
+import org.springframework.context.ApplicationListener
 import org.springframework.data.r2dbc.config.Beans
 import org.springframework.data.r2dbc.repository.cache.CaffeineGuidedCacheManager
 import org.springframework.security.authentication.BadCredentialsException
@@ -20,7 +24,7 @@ import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
 import org.springframework.stereotype.Component
-import reactor.util.function.Tuple4
+import reactor.util.function.Tuple5
 import reactor.util.function.Tuples
 import java.io.ByteArrayInputStream
 import java.io.InputStream
@@ -35,9 +39,8 @@ import java.util.*
 import javax.crypto.spec.SecretKeySpec
 import kotlin.streams.toList
 
-
 @Component
-class JwtTokenProvider {
+class JwtTokenProvider : ApplicationListener<RevokeTokenEvent> {
     @Value("\${spring.security.jwt.secret:}")
     lateinit var seckey: String
 
@@ -72,28 +75,53 @@ class JwtTokenProvider {
         } else
             privateKey
 
-    fun getAuthToken(authentication: Authentication): String = Jwts.builder()
-        .setSubject(authentication.name)
-        .claim(AUTHORITIES_KEY, authentication.authorities.stream().map { it.authority }.toList())
-        .signWith(
-            if (ObjectUtils.isNotEmpty(keyPath) && ObjectUtils.isNotEmpty(keyPassword) && authentication.name != Constants.TEST_USER) {
-                getPrivateKey()
-            } else
-                SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
-        )
-        .setExpiration(Date(Date().time + expiration.toLong() * 1000))
-        .compact()
+    fun getAuthToken(authentication: Authentication): String {
+        initializeCache()
+        val authorizeKey = Jwts.builder()
+            .setSubject(authentication.name)
+            .claim(AUTHORITIES_KEY, authentication.authorities.stream().map { it.authority }.toList())
+            .signWith(
+                if (ObjectUtils.isNotEmpty(keyPath) && ObjectUtils.isNotEmpty(keyPassword) && authentication.name != Constants.TEST_USER) {
+                    getPrivateKey()
+                } else
+                    SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
+            )
+            .setExpiration(Date(Date().time + expiration.toLong() * 1000))
+            .compact()
+        val cacheMap = cacheManager!!.getCache(JWT_CACHE)!!
+        val expire = LocalDateTime.ofEpochSecond(extractExpire(authorizeKey), 0, OffsetDateTime.now().offset)
+        cacheMap.put(authorizeKey, Tuples.of(authentication.principal, authentication.name, authentication.authorities, expire, false))
+        return authorizeKey
+    }
 
-    fun getAuthentication(authorizeKey: String): Authentication {
+    fun initializeCache() {
         if (cacheManager == null) {
             cacheManager = Beans.of(CacheManager::class.java, CaffeineGuidedCacheManager().apply {
-                setDefaultExpireAfterAccess("300000")
+                if (ObjectUtils.isNotEmpty(expiration)) {
+                    setDefaultExpireAfterAccess(ConvertUtils.convert(Integer.parseInt(expiration) * 1000))
+                } else
+                    setDefaultExpireAfterAccess("300000")
             })
             info("ABAC Security initialize with cache: " + cacheManager!!.javaClass.simpleName)
         }
-        val cacheMap = cacheManager!!.getCache(JwtTokenProvider::class.qualifiedName!!)!!
-        if (cacheMap.has(authorizeKey)) {
-            val tuple = cacheMap.get(authorizeKey) as Tuple4<User, String, List<GrantedAuthority>, LocalDateTime>
+    }
+
+    override fun onApplicationEvent(event: RevokeTokenEvent) {
+        val cacheMap = cacheManager!!.getCache("jwt")!!
+        val tuple = cacheMap.get(event.token, Tuple5::class.java) as Tuple5<User, String, List<GrantedAuthority>, LocalDateTime, Boolean>?
+        if (tuple != null) {
+            cacheMap.put(event.token, Tuples.of(tuple.t1, tuple.t2, tuple.t3, tuple.t4, true))
+        }
+    }
+
+    fun getAuthentication(authorizeKey: String): Authentication {
+        initializeCache()
+        val cacheMap = cacheManager!!.getCache(JWT_CACHE)!!
+        val tuple = cacheMap.get(authorizeKey, Tuple5::class.java) as Tuple5<User, String, List<GrantedAuthority>, LocalDateTime, Boolean>?
+        if (tuple != null) {
+            if (tuple.t5) {
+                throw RuntimeException("JWT revoked: " + tuple.t4)
+            }
             if (LocalDateTime.now().isAfter(tuple.t4)) {
                 throw RuntimeException("JWT expired: " + tuple.t4)
             }
@@ -104,7 +132,7 @@ class JwtTokenProvider {
             .map { role -> SimpleGrantedAuthority(role.toString()) }.toList()
         val principal = User(claims.subject, StringUtils.EMPTY, authorities)
         val expire = LocalDateTime.ofEpochSecond(extractExpire(authorizeKey), 0, OffsetDateTime.now().offset)
-        cacheMap.put(authorizeKey, Tuples.of(principal, claims.get(AUTHORITIES_USER, String::class.java), authorities, expire))
+        cacheMap.put(authorizeKey, Tuples.of(principal, claims.get(AUTHORITIES_USER, String::class.java), authorities, expire, false))
         return UsernamePasswordAuthenticationToken(principal, claims.get(AUTHORITIES_USER, String::class.java), authorities)
     }
 

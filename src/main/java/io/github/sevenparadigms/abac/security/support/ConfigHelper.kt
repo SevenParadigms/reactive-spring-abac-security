@@ -10,9 +10,6 @@ import io.github.sevenparadigms.abac.Constants.ROLE_USER
 import io.github.sevenparadigms.abac.Constants.SKIP_TOKEN_PROPERTY
 import io.github.sevenparadigms.abac.security.auth.data.UserPrincipal
 import io.github.sevenparadigms.abac.security.auth.encrypt.JwtTokenProvider
-import io.github.sevenparadigms.abac.security.opaque.data.TokenIntrospectionRequest
-import io.github.sevenparadigms.abac.security.opaque.data.TokenIntrospectionSuccessResponse
-import io.github.sevenparadigms.abac.security.opaque.service.TokenAuthorizationService
 import io.jsonwebtoken.Claims
 import org.apache.commons.lang3.StringUtils
 import org.sevenparadigms.kotlin.common.error
@@ -39,10 +36,8 @@ import org.springframework.security.web.server.ServerAuthenticationEntryPoint
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
 import org.springframework.util.ObjectUtils
-import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.ServerResponse.badRequest
 import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
@@ -108,16 +103,6 @@ open class ConfigHelper {
             .switchIfEmpty(Mono.error { throw BadCredentialsException("Login and password required") })
             .flatMap { authenticationManager.authenticate(UsernamePasswordAuthenticationToken(it.login, it.password)) }
             .flatMap { ok().bodyValue(jwtTokenProvider.getAuthToken(it)) }
-    }
-
-    fun validateOpaqueToken(serverRequest: ServerRequest): Mono<ServerResponse> {
-        val validator = Beans.of(TokenAuthorizationService::class.java)
-        return serverRequest.bodyToMono(TokenIntrospectionRequest::class.java)
-            .flatMap { validator.validateToken(it) }
-            .flatMap {
-                if (it is TokenIntrospectionSuccessResponse) ok().body(BodyInserters.fromValue(it))
-                else badRequest().body(BodyInserters.fromValue(it))
-            }
     }
 
     private fun skipValidation(authToken: String): Mono<Authentication> {

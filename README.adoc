@@ -11,7 +11,7 @@ The Maven Central dependency instead of the library `spring-data-abac-security`:
 <dependency>
     <groupId>io.github.sevenparadigms</groupId>
     <artifactId>reactive-spring-abac-security</artifactId>
-    <version>1.2.7</version>
+    <version>1.3.0</version>
 </dependency>
 ----
 
@@ -34,12 +34,18 @@ spring.security:
       keystore-alias: key alias
       keystore-password: changeit
       algorithm: HS512 # in default
-      introspection:
-        cache-token: abcdefg
-        uri: http://auth-service
-        secret: 12345678
-        client-id: gateway
-        response-timeout: 300
 ----
 
 All JWT token claim parsing is cached in Spring CacheManager. If bean of CacheManager (Hazelcast) is not found then using own Caffeine Cache.
+
+Token cache is expire by default after 5 min, his name is `jwt` and it's also setting in application.yml:
+
+[source,yaml]
+----
+spring.cache:
+  jwt.expireAfterAccess: 500 # milliseconds
+  jwt.expireAfterWrite: 1000 # milliseconds
+  jwt.maximumSize: 10000
+----
+
+if it nothing then try use `spring.security.jwt.expiration` property.

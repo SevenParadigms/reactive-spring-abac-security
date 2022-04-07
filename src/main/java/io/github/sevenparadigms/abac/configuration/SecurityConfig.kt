@@ -91,7 +91,4 @@ class SecurityConfig(
 
     @Bean
     fun auth() = RouterFunctions.route(POST("/auth"), ::authorize)
-
-    @Bean
-    fun opaqueToken() = RouterFunctions.route(POST("/auth/token/introspect"), ::validateOpaqueToken)
 }

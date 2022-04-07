@@ -1,4 +1,4 @@
-package io.github.sevenparadigms.abac.security.cache.data
+package io.github.sevenparadigms.abac.security.auth.data
 
 import org.springframework.context.ApplicationEvent
 
