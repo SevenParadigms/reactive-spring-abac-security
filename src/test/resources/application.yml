@@ -30,7 +30,5 @@ spring:
         C5APTpX7Rj2+mU8c/fDzFA1m+LXYp2T3dbi3yVOTzSwRkE84sE18fdgRuvJfpmxL
         W3BuVKQ9/1bzpcTK1onKw7WNqrjCoO37G+d42IeDzXMdDjyI3POYYy8g/o//sp6O
         JhhMDEwt2aEAKEVlQxYzgMBn8HeUQrHSeX+ML8Q=
-      introspection:
-        secret: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTYzMDYxMDI5NX0.m0XU2NvGaAtzptgLfmptj3Fk7S1e1NrBTYTqBAjHoPI8lbRB7z3J52FiLRw-PUZPjQusDt19RszrUQDsZoVXeQ
   main:
     allow-bean-definition-overriding: true

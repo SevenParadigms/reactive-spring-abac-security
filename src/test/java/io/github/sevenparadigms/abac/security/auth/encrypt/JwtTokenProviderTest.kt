@@ -19,23 +19,20 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 @ContextConfiguration(classes = [HazelcastCacheConfiguration::class, AuthConfiguration::class])
 @ExtendWith(SpringExtension::class)
 class JwtTokenProviderTest {
-
     @Autowired
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
     @Autowired
     private lateinit var context: ApplicationContext
 
-    private val authentication = createAuthentication()
-
     @Test
     fun getToken() {
-        Assertions.assertNotNull(jwtTokenProvider.getAuthToken(authentication))
+        Assertions.assertNotNull(jwtTokenProvider.getAuthToken(createAuthentication()))
     }
 
     @Test
     fun getClaims_whenNoAuthorities() {
-        val actual = jwtTokenProvider.getClaims(
+        val actual = jwtTokenProvider.getJwtClaims(
             jwtTokenProvider.getAuthToken(
                 UsernamePasswordAuthenticationToken("user", "password")
             )
@@ -47,12 +44,12 @@ class JwtTokenProviderTest {
 
     @Test
     fun getClaims_whenEmptyToken() {
-        Assertions.assertThrows(BadCredentialsException::class.java) { jwtTokenProvider.getClaims("") }
+        Assertions.assertThrows(BadCredentialsException::class.java) { jwtTokenProvider.getJwtClaims("") }
     }
 
     @Test
     fun getClaims() {
-        val actual = jwtTokenProvider.getClaims(jwtTokenProvider.getAuthToken(authentication))
+        val actual = jwtTokenProvider.getJwtClaims(jwtTokenProvider.getAuthToken(createAuthentication()))
 
         Assertions.assertEquals("user", actual["sub"])
         Assertions.assertEquals(listOf("role"), actual["auth"])
@@ -61,25 +58,22 @@ class JwtTokenProviderTest {
 
     @Test
     fun getAuthentication() {
-        Beans.setAndGetContext(context)
-        val token = jwtTokenProvider.getAuthToken(authentication)
+        val token = jwtTokenProvider.getAuthToken(createAuthentication())
         val authentication = jwtTokenProvider.getAuthentication(token)
-        Assertions.assertTrue(authentication.credentials.toString() == "user")
+        Assertions.assertTrue((authentication.principal as User).username == "user")
         Assertions.assertEquals(authentication.authorities.map { it.authority }, listOf("role"))
     }
 
     private fun createAuthentication(): Authentication {
-        val authorities = ArrayList<SimpleGrantedAuthority>()
-        authorities.add(SimpleGrantedAuthority("role"))
-
-        return UsernamePasswordAuthenticationToken(createUser(authorities), "password", authorities)
-    }
-
-    private fun createUser(authorities: List<SimpleGrantedAuthority>): User {
-        return User(
-            "user",
-            "",
-            authorities
+        Beans.setAndGetContext(context)
+        return UsernamePasswordAuthenticationToken(
+            User(
+                "user",
+                "",
+                listOf(SimpleGrantedAuthority("role"))
+            ),
+            null,
+            listOf(SimpleGrantedAuthority("role"))
         )
     }
 }

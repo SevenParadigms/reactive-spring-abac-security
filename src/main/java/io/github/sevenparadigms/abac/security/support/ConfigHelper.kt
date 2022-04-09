@@ -6,17 +6,23 @@ import io.github.sevenparadigms.abac.Constants.AUTHORIZE_KEY
 import io.github.sevenparadigms.abac.Constants.AUTHORIZE_LOGIN
 import io.github.sevenparadigms.abac.Constants.AUTHORIZE_ROLES
 import io.github.sevenparadigms.abac.Constants.BEARER
+import io.github.sevenparadigms.abac.Constants.JWT_EXPIRE_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_SKIP_TOKEN_PROPERTY
 import io.github.sevenparadigms.abac.Constants.ROLE_USER
-import io.github.sevenparadigms.abac.Constants.SKIP_TOKEN_PROPERTY
+import io.github.sevenparadigms.abac.getBearerToken
+import io.github.sevenparadigms.abac.hasHeader
+import io.github.sevenparadigms.abac.security.auth.data.AuthResponse
 import io.github.sevenparadigms.abac.security.auth.data.UserPrincipal
 import io.github.sevenparadigms.abac.security.auth.encrypt.JwtTokenProvider
 import io.jsonwebtoken.Claims
+import org.apache.commons.codec.digest.MurmurHash2
+import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils
-import org.sevenparadigms.kotlin.common.error
 import org.sevenparadigms.kotlin.common.parseJson
 import org.springframework.data.r2dbc.config.Beans
 import org.springframework.data.r2dbc.repository.query.Dsl
 import org.springframework.data.r2dbc.support.DslUtils
+import org.springframework.data.r2dbc.support.JsonUtils
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.server.reactive.ServerHttpRequest
@@ -35,7 +41,6 @@ import org.springframework.security.oauth2.server.resource.introspection.Reactiv
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
-import org.springframework.util.ObjectUtils
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
@@ -78,7 +83,7 @@ open class ConfigHelper {
                     )
                 )
             }
-            val skipTokenValidation = Beans.getProperty(SKIP_TOKEN_PROPERTY, Boolean::class.java, false)
+            val skipTokenValidation = Beans.getProperty(JWT_SKIP_TOKEN_PROPERTY, Boolean::class.java, false)
             if (skipTokenValidation) {
                 return@ServerAuthenticationConverter skipValidation(bearerToken.substring(BEARER.length))
             }
@@ -98,11 +103,48 @@ open class ConfigHelper {
     fun authorize(serverRequest: ServerRequest): Mono<ServerResponse> {
         val jwtTokenProvider = Beans.of(JwtTokenProvider::class.java)
         val authenticationManager = Beans.of(ReactiveAuthenticationManager::class.java)
+        val expiration = Beans.getProperty(JWT_EXPIRE_PROPERTY, StringUtils.EMPTY)
         return serverRequest.bodyToMono(UserPrincipal::class.java)
             .filter { !ObjectUtils.isEmpty(it.login) && !ObjectUtils.isEmpty(it.password) }
             .switchIfEmpty(Mono.error { throw BadCredentialsException("Login and password required") })
             .flatMap { authenticationManager.authenticate(UsernamePasswordAuthenticationToken(it.login, it.password)) }
-            .flatMap { ok().bodyValue(jwtTokenProvider.getAuthToken(it)) }
+            .map { jwtTokenProvider.getAuthToken(it) }
+            .flatMap { ok().bodyValue(AuthResponse(
+                tokenType = BEARER.trim().lowercase(),
+                accessToken = it,
+                expiresIn = expiration.toInt(),
+                refreshToken = jwtTokenProvider.getRefreshToken(it)
+            )) }
+    }
+
+    fun refresh(serverRequest: ServerRequest): Mono<ServerResponse> {
+        val error: String
+        val jwtTokenProvider = Beans.of(JwtTokenProvider::class.java)
+        val refreshToken = serverRequest.queryParam("refresh_token")
+        if (serverRequest.hasHeader(HttpHeaders.AUTHORIZATION) && refreshToken.isPresent && ObjectUtils.isNotEmpty(refreshToken.get())) {
+            val refreshTuple = JwtCache.getRefresh(refreshToken.get())
+            val authorizeKey = serverRequest.getBearerToken()
+            if (refreshTuple != null && MurmurHash2.hash64(authorizeKey) == refreshTuple.t1 && Date().before(refreshTuple.t2)) {
+                val cacheContext = JwtCache.get(refreshTuple.t1)!!
+                val authentication = jwtTokenProvider.getAuthToken(
+                    UsernamePasswordAuthenticationToken(cacheContext.t1, null, cacheContext.t1.authorities)
+                )
+                val expiration = Beans.getProperty(JWT_EXPIRE_PROPERTY, StringUtils.EMPTY)
+                JwtCache.evict(refreshTuple.t1).evictRefresh(refreshToken.get())
+                return ok().bodyValue(AuthResponse(
+                    tokenType = BEARER.trim().lowercase(),
+                    accessToken = authentication,
+                    expiresIn = expiration.toInt(),
+                    refreshToken = jwtTokenProvider.getRefreshToken(authentication)
+                ))
+            } else {
+                error = "Actual Bearer token is not found or refresh token is expired"
+            }
+        } else
+            error = "Authorization header or query param `refresh_token` is not found"
+        return ServerResponse.badRequest().bodyValue(JsonUtils.objectNode()
+            .put("error", "Invalid request")
+            .put("error", error))
     }
 
     private fun skipValidation(authToken: String): Mono<Authentication> {
@@ -113,7 +155,7 @@ open class ConfigHelper {
                     String(
                         Base64.getDecoder().decode(token.split(DslUtils.DOT)[1])
                     ).parseJson(LinkedHashMap::class.java)
-                if ((claims[Claims.EXPIRATION] as Int).plus(expirationProperty) < TimeUnit.MILLISECONDS.toSeconds(
+                if ((claims[Claims.EXPIRATION] as Int).plus(expirationProperty * 1000) < TimeUnit.MILLISECONDS.toSeconds(
                         System.currentTimeMillis()
                     )
                 ) {

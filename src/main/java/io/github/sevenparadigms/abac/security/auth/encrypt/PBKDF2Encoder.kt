@@ -1,5 +1,7 @@
 package io.github.sevenparadigms.abac.security.auth.encrypt
 
+import io.github.sevenparadigms.abac.Constants.JWT_ITERATION_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_SECRET_PROPERTY
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -10,12 +12,12 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
 @Component
-@ConditionalOnProperty("spring.security.jwt.secret")
+@ConditionalOnProperty(JWT_SECRET_PROPERTY)
 class PBKDF2Encoder : PasswordEncoder {
-    @Value("\${spring.security.jwt.secret}")
+    @Value("\${$JWT_SECRET_PROPERTY}")
     lateinit var secret: String
 
-    @Value("\${spring.security.jwt.iteration}")
+    @Value("\${$JWT_ITERATION_PROPERTY}")
     lateinit var iteration: String
 
     override fun encode(cs: CharSequence) = Base64.getEncoder().encodeToString(

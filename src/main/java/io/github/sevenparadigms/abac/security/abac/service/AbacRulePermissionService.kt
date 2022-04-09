@@ -1,5 +1,6 @@
 package io.github.sevenparadigms.abac.security.abac.service
 
+import io.github.sevenparadigms.abac.Constants.ABAC_URL_PROPERTY
 import io.github.sevenparadigms.abac.security.abac.data.AbacControlContext
 import io.github.sevenparadigms.abac.security.abac.data.AbacEnvironment
 import io.github.sevenparadigms.abac.security.abac.data.AbacRuleRepository
@@ -16,7 +17,7 @@ import org.springframework.security.core.userdetails.User
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnProperty("spring.security.abac.url")
+@ConditionalOnProperty(ABAC_URL_PROPERTY)
 class AbacRulePermissionService(
     private val abacRuleRepository: AbacRuleRepository,
     private val exchangeContext: ExchangeContext

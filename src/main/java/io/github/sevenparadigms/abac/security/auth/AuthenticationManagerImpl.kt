@@ -20,12 +20,6 @@ class AuthenticationManagerImpl(
             .flatMap { userDetailsService.findByUsername(it.name) }
             .filter { passwordEncoder.matches(authentication.credentials as String, it.password) }
             .switchIfEmpty(Mono.error { BadCredentialsException("Invalid credentials") })
-            .map {
-                UsernamePasswordAuthenticationToken(
-                    authentication.principal,
-                    authentication.credentials,
-                    it.authorities
-                )
-            }
+            .map { UsernamePasswordAuthenticationToken(it, null, it.authorities) }
     }
 }

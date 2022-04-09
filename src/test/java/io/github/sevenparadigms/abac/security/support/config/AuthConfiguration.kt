@@ -1,5 +1,6 @@
 package io.github.sevenparadigms.abac.security.support.config
 
+import io.github.sevenparadigms.abac.Constants.JWT_SECRET_PROPERTY
 import io.github.sevenparadigms.abac.security.auth.AuthenticationManagerImpl
 import io.github.sevenparadigms.abac.security.auth.ReactiveUserDetailsServiceImpl
 import io.github.sevenparadigms.abac.security.auth.data.UserRepository
@@ -45,7 +46,7 @@ class AuthConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty("spring.security.jwt.secret")
+    @ConditionalOnProperty(JWT_SECRET_PROPERTY)
     fun reactiveAuthenticateManager(
         mockUserDetailsService: ReactiveUserDetailsService,
         passwordEncoder: PasswordEncoder

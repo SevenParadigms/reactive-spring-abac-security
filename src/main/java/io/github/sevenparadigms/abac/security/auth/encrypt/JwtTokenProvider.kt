@@ -1,22 +1,28 @@
 package io.github.sevenparadigms.abac.security.auth.encrypt
 
 import io.github.sevenparadigms.abac.Constants
-import io.github.sevenparadigms.abac.Constants.AUTHORITIES_EXPIRE
 import io.github.sevenparadigms.abac.Constants.AUTHORITIES_KEY
-import io.github.sevenparadigms.abac.Constants.AUTHORITIES_USER
-import io.github.sevenparadigms.abac.Constants.JWT_CACHE
+import io.github.sevenparadigms.abac.Constants.JWT_ALGORITHM_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_EXPIRE_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_KEYSTORE_ALIAS_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_KEYSTORE_PASSWORD_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_KEYSTORE_PATH_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_KEYSTORE_TYPE_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_PUBLIC_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_REFRESH_EXPIRE_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_SECRET_PROPERTY
 import io.github.sevenparadigms.abac.security.auth.data.RevokeTokenEvent
+import io.github.sevenparadigms.abac.security.support.JwtCache
 import io.jsonwebtoken.*
 import io.jsonwebtoken.security.SignatureException
-import org.apache.commons.beanutils.ConvertUtils
+import org.apache.commons.codec.digest.MurmurHash2
 import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils
-import org.sevenparadigms.kotlin.common.*
+import org.sevenparadigms.kotlin.common.error
+import org.sevenparadigms.kotlin.common.loadResource
+import org.sevenparadigms.kotlin.common.remove
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.cache.CacheManager
 import org.springframework.context.ApplicationListener
-import org.springframework.data.r2dbc.config.Beans
-import org.springframework.data.r2dbc.repository.cache.CaffeineGuidedCacheManager
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
@@ -24,8 +30,6 @@ import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
 import org.springframework.stereotype.Component
-import reactor.util.function.Tuple5
-import reactor.util.function.Tuples
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.security.KeyStore
@@ -33,41 +37,44 @@ import java.security.KeyStore.PasswordProtection
 import java.security.KeyStore.ProtectionParameter
 import java.security.PrivateKey
 import java.security.cert.CertificateFactory
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
 import kotlin.streams.toList
 
 @Component
 class JwtTokenProvider : ApplicationListener<RevokeTokenEvent> {
-    @Value("\${spring.security.jwt.secret:}")
+    @Value("\${$JWT_SECRET_PROPERTY:}")
     lateinit var seckey: String
 
-    @Value("\${spring.security.jwt.public:}")
+    @Value("\${$JWT_PUBLIC_PROPERTY:}")
     lateinit var pubkey: String
 
-    @Value("\${spring.security.jwt.expiration:}")
+    @Value("\${$JWT_EXPIRE_PROPERTY:}")
     lateinit var expiration: String
 
-    @Value("\${spring.security.jwt.algorithm:HS512}")
+    @Value("\${$JWT_REFRESH_EXPIRE_PROPERTY:3600}")
+    lateinit var refreshExpiration: String
+
+    @Value("\${$JWT_ALGORITHM_PROPERTY:HS512}")
     lateinit var algorithm: String
 
-    @Value("\${spring.security.jwt.keystore-path:}")
+    @Value("\${$JWT_KEYSTORE_PATH_PROPERTY:}")
     lateinit var keyPath: String
 
-    @Value("\${spring.security.jwt.keystore-alias:}")
+    @Value("\${$JWT_KEYSTORE_TYPE_PROPERTY:PKCS12}")
+    lateinit var keyType: String
+
+    @Value("\${$JWT_KEYSTORE_ALIAS_PROPERTY:}")
     lateinit var keystoreAlias: String
 
-    @Value("\${spring.security.jwt.keystore-password:}")
+    @Value("\${$JWT_KEYSTORE_PASSWORD_PROPERTY:}")
     lateinit var keyPassword: String
 
     private var privateKey: PrivateKey? = null
-    private var cacheManager: CacheManager? = null
 
     private fun getPrivateKey() =
         if (privateKey == null) {
-            val keyStore = KeyStore.getInstance("PKCS12")
+            val keyStore = KeyStore.getInstance(keyType)
             keyStore.load(ByteArrayInputStream(keyPath.loadResource()), keyPassword.toCharArray())
             val entryPassword: ProtectionParameter = PasswordProtection(keyPassword.toCharArray())
             val privateKeyEntry = keyStore.getEntry(keystoreAlias, entryPassword) as KeyStore.PrivateKeyEntry
@@ -76,10 +83,13 @@ class JwtTokenProvider : ApplicationListener<RevokeTokenEvent> {
             privateKey
 
     fun getAuthToken(authentication: Authentication): String {
-        initializeCache()
+        val expireDate = Date(Date().time + expiration.toLong() * 1000)
         val authorizeKey = Jwts.builder()
             .setSubject(authentication.name)
-            .claim(AUTHORITIES_KEY, authentication.authorities.stream().map { it.authority }.toList())
+            .claim(
+                AUTHORITIES_KEY,
+                authentication.authorities.stream().map { it.authority }.toList()
+            )
             .signWith(
                 if (ObjectUtils.isNotEmpty(keyPath) && ObjectUtils.isNotEmpty(keyPassword) && authentication.name != Constants.TEST_USER) {
                     getPrivateKey()
@@ -88,62 +98,56 @@ class JwtTokenProvider : ApplicationListener<RevokeTokenEvent> {
             )
             .setExpiration(Date(Date().time + expiration.toLong() * 1000))
             .compact()
-        val cacheMap = cacheManager!!.getCache(JWT_CACHE)!!
-        val expire = LocalDateTime.ofEpochSecond(extractExpire(authorizeKey), 0, OffsetDateTime.now().offset)
-        cacheMap.put(authorizeKey, Tuples.of(authentication.principal, authentication.name, authentication.authorities, expire, false))
+        JwtCache.put(authorizeKey, authentication.principal, expireDate)
         return authorizeKey
     }
 
-    fun initializeCache() {
-        if (cacheManager == null) {
-            cacheManager = Beans.of(CacheManager::class.java, CaffeineGuidedCacheManager().apply {
-                if (ObjectUtils.isNotEmpty(expiration)) {
-                    setDefaultExpireAfterAccess(ConvertUtils.convert(Integer.parseInt(expiration) * 1000))
+    fun getRefreshToken(authorizeKey: String): String {
+        val tokenHash = MurmurHash2.hash64(authorizeKey)
+        val expireDate = Date(Date().time + refreshExpiration.toLong() * 1000)
+        val refreshKey = Jwts.builder()
+            .setSubject(tokenHash.toString())
+            .signWith(
+                if (ObjectUtils.isNotEmpty(keyPath) && ObjectUtils.isNotEmpty(keyPassword)) {
+                    getPrivateKey()
                 } else
-                    setDefaultExpireAfterAccess("300000")
-            })
-            info("ABAC Security initialize with cache: " + cacheManager!!.javaClass.simpleName)
-        }
+                    SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
+            )
+            .setExpiration(expireDate)
+            .compact()
+        JwtCache.putRefresh(refreshKey, tokenHash, expireDate)
+        return refreshKey
     }
 
     override fun onApplicationEvent(event: RevokeTokenEvent) {
-        val cacheMap = cacheManager!!.getCache("jwt")!!
-        val tuple = cacheMap.get(event.token, Tuple5::class.java) as Tuple5<User, String, List<GrantedAuthority>, LocalDateTime, Boolean>?
-        if (tuple != null) {
-            cacheMap.put(event.token, Tuples.of(tuple.t1, tuple.t2, tuple.t3, tuple.t4, true))
+        val cacheContext = JwtCache.get(event.token)
+        if (cacheContext != null) {
+            JwtCache.put(event.token, cacheContext.t1, cacheContext.t2, true)
         }
     }
 
     fun getAuthentication(authorizeKey: String): Authentication {
-        initializeCache()
-        val cacheMap = cacheManager!!.getCache(JWT_CACHE)!!
-        val tuple = cacheMap.get(authorizeKey, Tuple5::class.java) as Tuple5<User, String, List<GrantedAuthority>, LocalDateTime, Boolean>?
-        if (tuple != null) {
-            if (tuple.t5) {
-                throw RuntimeException("JWT revoked: " + tuple.t4)
+        val cacheContext = JwtCache.get(authorizeKey)
+        if (cacheContext != null) {
+            if (Date().after(cacheContext.t2)) {
+                error("Expired JWT token: $authorizeKey")
+                throw BadCredentialsException("Invalid token")
             }
-            if (LocalDateTime.now().isAfter(tuple.t4)) {
-                throw RuntimeException("JWT expired: " + tuple.t4)
+            if (cacheContext.t3) {
+                error("Revoked JWT token: $authorizeKey")
+                throw BadCredentialsException("Invalid token")
             }
-            return UsernamePasswordAuthenticationToken(tuple.t1, tuple.t2, tuple.t3)
+            return UsernamePasswordAuthenticationToken(cacheContext.t1, null, cacheContext.t1.authorities)
         }
-        val claims = getClaims(authorizeKey)
+        val claims = getJwtClaims(authorizeKey)
         val authorities: List<GrantedAuthority> = claims.get(AUTHORITIES_KEY, List::class.java)
             .map { role -> SimpleGrantedAuthority(role.toString()) }.toList()
         val principal = User(claims.subject, StringUtils.EMPTY, authorities)
-        val expire = LocalDateTime.ofEpochSecond(extractExpire(authorizeKey), 0, OffsetDateTime.now().offset)
-        cacheMap.put(authorizeKey, Tuples.of(principal, claims.get(AUTHORITIES_USER, String::class.java), authorities, expire, false))
-        return UsernamePasswordAuthenticationToken(principal, claims.get(AUTHORITIES_USER, String::class.java), authorities)
+        JwtCache.put(authorizeKey, principal, claims.expiration)
+        return UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
     }
 
-    fun extractExpire(authorizeKey: String): Long {
-        val decoder = Base64.getUrlDecoder()
-        val parts = authorizeKey.split(".")
-        val expire = String(decoder.decode(parts[1])).objectToJson()
-        return expire.get(AUTHORITIES_EXPIRE).longValue()
-    }
-
-    fun getClaims(authorizeKey: String): Claims {
+    fun getJwtClaims(authorizeKey: String): Claims {
         try {
             val key = if (ObjectUtils.isEmpty(keyPath) && ObjectUtils.isEmpty(pubkey) && ObjectUtils.isNotEmpty(seckey))
                 SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
@@ -156,7 +160,7 @@ class JwtTokenProvider : ApplicationListener<RevokeTokenEvent> {
                     if (ObjectUtils.isNotEmpty(keyPath)) {
                         getPrivateKey()
                     } else {
-                        throw RuntimeException("Property with public key[spring.security.jwt.public] not found")
+                        throw RuntimeException("Property with public key[$JWT_PUBLIC_PROPERTY] not found")
                     }
             return Jwts.parserBuilder()
                 .setSigningKey(key)

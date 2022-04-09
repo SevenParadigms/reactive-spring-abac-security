@@ -1,6 +1,8 @@
 package io.github.sevenparadigms.abac.configuration
 
 import io.github.sevenparadigms.abac.Constants
+import io.github.sevenparadigms.abac.Constants.ABAC_URL_PROPERTY
+import io.github.sevenparadigms.abac.Constants.JWT_EXPIRE_PROPERTY
 import io.github.sevenparadigms.abac.security.abac.data.AbacRuleRepository
 import io.github.sevenparadigms.abac.security.abac.service.AbacRulePermissionService
 import io.github.sevenparadigms.abac.security.auth.encrypt.JwtTokenProvider
@@ -16,6 +18,7 @@ import org.springframework.core.env.Environment
 import org.springframework.data.r2dbc.config.Beans
 import org.springframework.data.r2dbc.support.R2dbcUtils
 import org.springframework.http.HttpMethod
+import org.springframework.http.MediaType
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity
@@ -26,8 +29,9 @@ import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository
 import org.springframework.security.web.server.savedrequest.NoOpServerRequestCache
-import org.springframework.web.reactive.function.server.RequestPredicates.POST
-import org.springframework.web.reactive.function.server.RouterFunctions
+import org.springframework.web.reactive.function.server.RouterFunction
+import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.router
 
 @Configuration
 @EnableWebFluxSecurity
@@ -79,16 +83,26 @@ class SecurityConfig(
     @Bean
     fun authenticationWebFilter(authenticationManager: ReactiveAuthenticationManager) =
         AuthenticationWebFilter(authenticationManager).also {
-            val isAuthorizeKeyEnabled = Beans.getProperty(Constants.AUTHORIZE_PROPERTY, Boolean::class.java, false)
+            val isAuthorizeKeyEnabled = Beans.getProperty(Constants.JWT_AUTHORIZE_PROPERTY, Boolean::class.java, false)
             it.setRequiresAuthenticationMatcher(jwtHeadersExchangeMatcher(isAuthorizeKeyEnabled))
             it.setServerAuthenticationConverter(tokenAuthenticationConverter(isAuthorizeKeyEnabled, jwtTokenProvider))
         }
 
     @Bean
-    @ConditionalOnProperty("spring.security.abac.url")
-    fun abacRuleRepository(@Value("\${spring.security.abac.url}") url: String): AbacRuleRepository =
+    @ConditionalOnProperty(ABAC_URL_PROPERTY)
+    fun abacRuleRepository(@Value("\${$ABAC_URL_PROPERTY}") url: String): AbacRuleRepository =
         R2dbcUtils.getRepository(url, AbacRuleRepository::class.java)
 
     @Bean
-    fun auth() = RouterFunctions.route(POST("/auth"), ::authorize)
+    @ConditionalOnProperty(JWT_EXPIRE_PROPERTY)
+    fun route(): RouterFunction<ServerResponse> = router {
+        ("/token").nest {
+            accept(MediaType.APPLICATION_JSON).nest {
+                POST("", ::authorize)
+            }
+            accept(MediaType.APPLICATION_JSON).nest {
+                GET("", ::refresh)
+            }
+        }
+    }
 }
