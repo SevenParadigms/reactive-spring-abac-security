@@ -22,7 +22,7 @@ class AbacRulePermissionService(
     private val exchangeContext: ExchangeContext
 ) : DenyAllPermissionEvaluator() {
     override fun hasPermission(authentication: Authentication, domainObject: Any, action: Any): Boolean {
-        debug("Secure user ${authentication.name} action '$action' on object ${domainObject.objectToJson()}")
+        debug("Check user ${authentication.name} action '$action' on object ${domainObject.objectToJson()}")
         val user = authentication.principal as User
         return checkIn(
             AbacSubject(user.username, user.authorities.map { it.authority }.toSet()),
