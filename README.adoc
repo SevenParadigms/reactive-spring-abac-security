@@ -36,9 +36,9 @@ spring.security:
       algorithm: HS512 # in default
 ----
 
-All JWT token claim parsing is cached in Spring CacheManager. If bean of CacheManager (Hazelcast) is not found then using own Caffeine Cache.
+All JWT token claim parsing is cached in Spring CacheManager. If bean of CacheManager (Hazelcast) is not found then using own Caffeine CacheManager.
 
-Token cache is expire by default after 5 min, his name is `jwt` and it's also setting in application.yml:
+Token cache have named is `jwt` and it's setting in application.yml in milliseconds:
 
 [source,yaml]
 ----
@@ -48,4 +48,4 @@ spring.cache:
   jwt.maximumSize: 10000
 ----
 
-if it nothing then try use `spring.security.jwt.expiration` property.
+if its property is nothing then used `spring.security.jwt.expiration` property in seconds. And it both is nothing then set default expire 5 minutes.
