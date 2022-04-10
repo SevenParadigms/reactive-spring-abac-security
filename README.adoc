@@ -11,7 +11,7 @@ The Maven Central dependency instead of the library `spring-data-abac-security`:
 <dependency>
     <groupId>io.github.sevenparadigms</groupId>
     <artifactId>reactive-spring-abac-security</artifactId>
-    <version>1.3.3</version>
+    <version>1.3.4</version>
 </dependency>
 ----
 
@@ -29,7 +29,6 @@ spring.security:
       iteration: 512
       length: 720
       expiration: 1800  # seconds
-      refresh-expiration: 3600  # seconds in default
       skip-token-validation: false
       public: <base64 of pem as public key>
       keystore-path: <filename.p12 from resource>
@@ -62,9 +61,11 @@ For get bearer token from `/token` send POST:
 }
 ----
 
-To get refresh token send GET:
+To get new token from refresh token send authorized GET:
 
 [source,html]
 ----
 /token?refresh_token=[yourRefreshToken]
 ----
+
+for most security, refresh token can claim only with his pair of jwt token and if jwt token is expired then refresh token is expired too.

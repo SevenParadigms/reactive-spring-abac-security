@@ -120,9 +120,11 @@ class JwtTokenProvider : ApplicationListener<RevokeTokenEvent> {
     }
 
     override fun onApplicationEvent(event: RevokeTokenEvent) {
-        val cacheContext = JwtCache.get(event.token)
+        val cacheContext = if (event.token == null) JwtCache.get(event.hash!!)
+        else JwtCache.get(event.token)
         if (cacheContext != null) {
-            JwtCache.put(event.token, cacheContext.t1, cacheContext.t2, true)
+            if (event.token == null) JwtCache.put(event.hash!!, cacheContext.t1, cacheContext.t2, true)
+            else JwtCache.put(event.token, cacheContext.t1, cacheContext.t2, true)
         }
     }
 

@@ -130,7 +130,7 @@ open class ConfigHelper {
                     UsernamePasswordAuthenticationToken(cacheContext.t1, null, cacheContext.t1.authorities)
                 )
                 val expiration = Beans.getProperty(JWT_EXPIRE_PROPERTY, StringUtils.EMPTY)
-                JwtCache.evict(refreshTuple.t1).evictRefresh(refreshToken.get())
+                JwtCache.revoke(refreshTuple.t1).evictRefresh(refreshToken.get())
                 return ok().bodyValue(AuthResponse(
                     tokenType = BEARER.trim().lowercase(),
                     accessToken = authentication,
