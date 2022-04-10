@@ -1,6 +1,8 @@
-package io.github.sevenparadigms.abac.security.auth
+package io.github.sevenparadigms.abac.configuration
 
 import io.github.sevenparadigms.abac.Constants.ABAC_URL_PROPERTY
+import io.github.sevenparadigms.abac.security.auth.AuthenticationManagerImpl
+import io.github.sevenparadigms.abac.security.auth.ReactiveUserDetailsServiceImpl
 import io.github.sevenparadigms.abac.security.auth.data.UserRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -13,7 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 
 @Configuration
 @ConditionalOnProperty(ABAC_URL_PROPERTY)
-class AuthenticationConfiguration {
+class AuthenticationConfig {
     @Bean
     fun userRepository(@Value("\${$ABAC_URL_PROPERTY}") url: String): UserRepository = R2dbcUtils.getRepository(url, UserRepository::class.java)
 

@@ -2,25 +2,19 @@ package io.github.sevenparadigms.abac.security.auth
 
 import io.github.sevenparadigms.abac.security.auth.data.UserPrincipal
 import io.github.sevenparadigms.abac.security.auth.data.UserRepository
-import io.github.sevenparadigms.abac.security.support.config.AuthConfiguration
+import io.github.sevenparadigms.abac.security.support.config.AbstractTestEnvironment
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.sevenparadigms.kotlin.common.objectToJson
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService
-import org.springframework.test.context.ContextConfiguration
-import org.springframework.test.context.junit.jupiter.SpringExtension
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 import java.util.*
 
-@ContextConfiguration(classes = [AuthConfiguration::class])
-@ExtendWith(SpringExtension::class)
-class ReactiveUserDetailsServiceImplTest {
-
+class ReactiveUserDetailsServiceImplTest : AbstractTestEnvironment() {
     @Autowired
     @Qualifier("userDetailsService")
     private lateinit var userDetailsService: ReactiveUserDetailsService

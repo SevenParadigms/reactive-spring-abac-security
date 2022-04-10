@@ -1,16 +1,8 @@
 package io.github.sevenparadigms.abac.security.auth.encrypt
 
 import io.github.sevenparadigms.abac.Constants
-import io.github.sevenparadigms.abac.Constants.AUTHORITIES_KEY
-import io.github.sevenparadigms.abac.Constants.JWT_ALGORITHM_PROPERTY
-import io.github.sevenparadigms.abac.Constants.JWT_EXPIRE_PROPERTY
-import io.github.sevenparadigms.abac.Constants.JWT_KEYSTORE_ALIAS_PROPERTY
-import io.github.sevenparadigms.abac.Constants.JWT_KEYSTORE_PASSWORD_PROPERTY
-import io.github.sevenparadigms.abac.Constants.JWT_KEYSTORE_PATH_PROPERTY
-import io.github.sevenparadigms.abac.Constants.JWT_KEYSTORE_TYPE_PROPERTY
-import io.github.sevenparadigms.abac.Constants.JWT_PUBLIC_PROPERTY
-import io.github.sevenparadigms.abac.Constants.JWT_REFRESH_EXPIRE_PROPERTY
-import io.github.sevenparadigms.abac.Constants.JWT_SECRET_PROPERTY
+import io.github.sevenparadigms.abac.Constants.ROLES_KEY
+import io.github.sevenparadigms.abac.configuration.JwtProperties
 import io.github.sevenparadigms.abac.security.auth.data.RevokeTokenEvent
 import io.github.sevenparadigms.abac.security.support.JwtCache
 import io.jsonwebtoken.*
@@ -21,7 +13,6 @@ import org.apache.commons.lang3.StringUtils
 import org.sevenparadigms.kotlin.common.error
 import org.sevenparadigms.kotlin.common.loadResource
 import org.sevenparadigms.kotlin.common.remove
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationListener
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -42,61 +33,34 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.streams.toList
 
 @Component
-class JwtTokenProvider : ApplicationListener<RevokeTokenEvent> {
-    @Value("\${$JWT_SECRET_PROPERTY:}")
-    lateinit var seckey: String
-
-    @Value("\${$JWT_PUBLIC_PROPERTY:}")
-    lateinit var pubkey: String
-
-    @Value("\${$JWT_EXPIRE_PROPERTY:}")
-    lateinit var expiration: String
-
-    @Value("\${$JWT_REFRESH_EXPIRE_PROPERTY:3600}")
-    lateinit var refreshExpiration: String
-
-    @Value("\${$JWT_ALGORITHM_PROPERTY:HS512}")
-    lateinit var algorithm: String
-
-    @Value("\${$JWT_KEYSTORE_PATH_PROPERTY:}")
-    lateinit var keyPath: String
-
-    @Value("\${$JWT_KEYSTORE_TYPE_PROPERTY:PKCS12}")
-    lateinit var keyType: String
-
-    @Value("\${$JWT_KEYSTORE_ALIAS_PROPERTY:}")
-    lateinit var keystoreAlias: String
-
-    @Value("\${$JWT_KEYSTORE_PASSWORD_PROPERTY:}")
-    lateinit var keyPassword: String
-
+class JwtTokenProvider(val jwt: JwtProperties) : ApplicationListener<RevokeTokenEvent> {
     private var privateKey: PrivateKey? = null
 
     private fun getPrivateKey() =
         if (privateKey == null) {
-            val keyStore = KeyStore.getInstance(keyType)
-            keyStore.load(ByteArrayInputStream(keyPath.loadResource()), keyPassword.toCharArray())
-            val entryPassword: ProtectionParameter = PasswordProtection(keyPassword.toCharArray())
-            val privateKeyEntry = keyStore.getEntry(keystoreAlias, entryPassword) as KeyStore.PrivateKeyEntry
+            val keyStore = KeyStore.getInstance(jwt.keystoreType)
+            keyStore.load(ByteArrayInputStream(jwt.keystorePath.loadResource()), jwt.keystorePassword.toCharArray())
+            val entryPassword: ProtectionParameter = PasswordProtection(jwt.keystorePassword.toCharArray())
+            val privateKeyEntry = keyStore.getEntry(jwt.keystoreAlias, entryPassword) as KeyStore.PrivateKeyEntry
             privateKeyEntry.privateKey
         } else
             privateKey
 
     fun getAuthToken(authentication: Authentication): String {
-        val expireDate = Date(Date().time + expiration.toLong() * 1000)
+        val expireDate = Date(Date().time + jwt.expiration * 1000)
         val authorizeKey = Jwts.builder()
             .setSubject(authentication.name)
             .claim(
-                AUTHORITIES_KEY,
+                ROLES_KEY,
                 authentication.authorities.stream().map { it.authority }.toList()
             )
             .signWith(
-                if (ObjectUtils.isNotEmpty(keyPath) && ObjectUtils.isNotEmpty(keyPassword) && authentication.name != Constants.TEST_USER) {
+                if (ObjectUtils.isNotEmpty(jwt.keystorePath) && ObjectUtils.isNotEmpty(jwt.keystorePassword) && authentication.name != Constants.TEST_USER) {
                     getPrivateKey()
                 } else
-                    SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
+                    SecretKeySpec((jwt.secretKey + jwt.expiration).toByteArray(), SignatureAlgorithm.valueOf(jwt.signatureAlgorithm).jcaName)
             )
-            .setExpiration(Date(Date().time + expiration.toLong() * 1000))
+            .setExpiration(Date(Date().time + jwt.expiration * 1000))
             .compact()
         JwtCache.put(authorizeKey, authentication.principal, expireDate)
         return authorizeKey
@@ -104,14 +68,14 @@ class JwtTokenProvider : ApplicationListener<RevokeTokenEvent> {
 
     fun getRefreshToken(authorizeKey: String): String {
         val tokenHash = MurmurHash2.hash64(authorizeKey)
-        val expireDate = Date(Date().time + refreshExpiration.toLong() * 1000)
+        val expireDate = Date(Date().time + jwt.expiration * 1000)
         val refreshKey = Jwts.builder()
             .setSubject(tokenHash.toString())
             .signWith(
-                if (ObjectUtils.isNotEmpty(keyPath) && ObjectUtils.isNotEmpty(keyPassword)) {
+                if (ObjectUtils.isNotEmpty(jwt.keystorePath) && ObjectUtils.isNotEmpty(jwt.keystorePassword)) {
                     getPrivateKey()
                 } else
-                    SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
+                    SecretKeySpec((jwt.secretKey + jwt.expiration).toByteArray(), SignatureAlgorithm.valueOf(jwt.signatureAlgorithm).jcaName)
             )
             .setExpiration(expireDate)
             .compact()
@@ -142,7 +106,7 @@ class JwtTokenProvider : ApplicationListener<RevokeTokenEvent> {
             return UsernamePasswordAuthenticationToken(cacheContext.t1, null, cacheContext.t1.authorities)
         }
         val claims = getJwtClaims(authorizeKey)
-        val authorities: List<GrantedAuthority> = claims.get(AUTHORITIES_KEY, List::class.java)
+        val authorities: List<GrantedAuthority> = claims.get(ROLES_KEY, List::class.java)
             .map { role -> SimpleGrantedAuthority(role.toString()) }.toList()
         val principal = User(claims.subject, StringUtils.EMPTY, authorities)
         JwtCache.put(authorizeKey, principal, claims.expiration)
@@ -151,18 +115,18 @@ class JwtTokenProvider : ApplicationListener<RevokeTokenEvent> {
 
     fun getJwtClaims(authorizeKey: String): Claims {
         try {
-            val key = if (ObjectUtils.isEmpty(keyPath) && ObjectUtils.isEmpty(pubkey) && ObjectUtils.isNotEmpty(seckey))
-                SecretKeySpec("$seckey$expiration".toByteArray(), SignatureAlgorithm.valueOf(algorithm).jcaName)
+            val key = if (ObjectUtils.isEmpty(jwt.keystorePath) && ObjectUtils.isEmpty(jwt.publicKey) && ObjectUtils.isNotEmpty(jwt.secretKey))
+                SecretKeySpec((jwt.secretKey + jwt.expiration).toByteArray(), SignatureAlgorithm.valueOf(jwt.signatureAlgorithm).jcaName)
             else
-                if (ObjectUtils.isNotEmpty(pubkey)) {
+                if (ObjectUtils.isNotEmpty(jwt.publicKey)) {
                     val certificate: InputStream =
-                        ByteArrayInputStream(Base64.getDecoder().decode(pubkey.remove("[\\s\\r\\n\\t]")))
+                        ByteArrayInputStream(Base64.getDecoder().decode(jwt.publicKey.remove("[\\s\\r\\n\\t]")))
                     CertificateFactory.getInstance("X.509").generateCertificate(certificate).publicKey
                 } else
-                    if (ObjectUtils.isNotEmpty(keyPath)) {
+                    if (ObjectUtils.isNotEmpty(jwt.keystorePath)) {
                         getPrivateKey()
                     } else {
-                        throw RuntimeException("Property with public key[$JWT_PUBLIC_PROPERTY] not found")
+                        throw RuntimeException("Property with public key not found")
                     }
             return Jwts.parserBuilder()
                 .setSigningKey(key)

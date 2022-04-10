@@ -23,16 +23,17 @@ Properties:
 spring.security:
   abac.url: r2dbc:postgresql://lgn:psw@ip/abac_rules?schema=public
   jwt:
-      algorithm: HS512 # in default
+      algorithm: HS512 # default
       X-User-Id: true # X-User-Id, X-Login and X-Roles is read from headers
-      secret: 12345678
-      iteration: 512
-      length: 720
-      expiration: 1800  # seconds
+      secret-key: 12345678
+      password-algorithm: PBKDF2WithHmacSHA512 # default [PBKDF2WithHmacSHA1,PBKDF2WithHmacSHA256]
+      expiration: 300 # seconds as default
+      signature-algorithm: HS512 # default
+      iteration: 512  # seconds as default
       skip-token-validation: false
-      public: <base64 of pem as public key>
+      public-key: <base64 of pem as public key>
       keystore-path: <filename.p12 from resource>
-      keystore-type: PKCS12 # in default
+      keystore-type: PKCS12 # default
       keystore-alias: key alias
       keystore-password: changeit
 ----
@@ -49,7 +50,7 @@ spring.cache:
   jwt.maximumSize: 10000
 ----
 
-if its property is nothing then used `spring.security.jwt.expiration` property in seconds. And it both is nothing then set default expire 5 minutes.
+if its property is nothing then used `spring.security.jwt.expiration` property in seconds. And it both is nothing then set default expire to 5 minutes. Token caching is up performance over 15k requests per second.
 
 For get bearer token from `/token` send POST:
 

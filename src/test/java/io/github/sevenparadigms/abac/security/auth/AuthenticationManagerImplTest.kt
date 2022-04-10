@@ -1,9 +1,8 @@
 package io.github.sevenparadigms.abac.security.auth
 
 
-import io.github.sevenparadigms.abac.security.support.config.AuthConfiguration
+import io.github.sevenparadigms.abac.security.support.config.AbstractTestEnvironment
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,15 +15,13 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.test.context.ContextConfiguration
-import org.springframework.test.context.junit.jupiter.SpringExtension
+import org.springframework.test.context.TestPropertySource
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
-import kotlin.collections.ArrayList
 
-@ContextConfiguration(classes = [AuthConfiguration::class])
-@ExtendWith(SpringExtension::class)
-class AuthenticationManagerImplTest {
+@TestPropertySource(properties = ["spring.security.abac.url=true",
+    "spring.security.jwt.secret-key=eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTYzMDYxMDI5NX0.m0XU2NvGaAtzptgLfmptj3Fk7S1e1NrBTYTqBAjHoPI8lbRB7z3J52FiLRw-PUZPjQusDt19RszrUQDsZoVXeQ"])
+class AuthenticationManagerImplTest : AbstractTestEnvironment() {
 
     @Autowired
     private lateinit var authenticationManagerImpl: ReactiveAuthenticationManager
@@ -74,7 +71,7 @@ class AuthenticationManagerImplTest {
 
     private fun createAuthentication(): Authentication {
         val authorities = ArrayList<SimpleGrantedAuthority>()
-        authorities.add(SimpleGrantedAuthority("USER"))
+        authorities.add(SimpleGrantedAuthority("ROLE_USER"))
 
         return UsernamePasswordAuthenticationToken(createUser(authorities), "password", authorities)
     }
@@ -89,7 +86,7 @@ class AuthenticationManagerImplTest {
 
     private fun createUserDetails(): Mono<UserDetails> {
         val authorities = ArrayList<SimpleGrantedAuthority>()
-        authorities.add(SimpleGrantedAuthority("USER"))
+        authorities.add(SimpleGrantedAuthority("ROLE_USER"))
 
         return Mono.just(User("user", "7jSU1K/qEiKHmpnCSNA8t8iz3wSPEw==", authorities) as UserDetails)
     }

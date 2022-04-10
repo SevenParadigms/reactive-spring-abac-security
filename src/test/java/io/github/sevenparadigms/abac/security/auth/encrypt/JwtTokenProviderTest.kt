@@ -1,10 +1,9 @@
 package io.github.sevenparadigms.abac.security.auth.encrypt
 
-import io.github.sevenparadigms.abac.security.support.config.AuthConfiguration
+import io.github.sevenparadigms.abac.configuration.JwtProperties
+import io.github.sevenparadigms.abac.security.support.config.AbstractTestEnvironment
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.sevenparadigms.cache.hazelcast.HazelcastCacheConfiguration
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.data.r2dbc.config.Beans
@@ -13,20 +12,20 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
-import org.springframework.test.context.ContextConfiguration
-import org.springframework.test.context.junit.jupiter.SpringExtension
 
-@ContextConfiguration(classes = [HazelcastCacheConfiguration::class, AuthConfiguration::class])
-@ExtendWith(SpringExtension::class)
-class JwtTokenProviderTest {
+class JwtTokenProviderTest : AbstractTestEnvironment() {
     @Autowired
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
     @Autowired
     private lateinit var context: ApplicationContext
 
+    @Autowired
+    private lateinit var jwtProperties: JwtProperties
+
     @Test
     fun getToken() {
+        Assertions.assertEquals(jwtProperties.keystorePath, "gateway.p12")
         Assertions.assertNotNull(jwtTokenProvider.getAuthToken(createAuthentication()))
     }
 
@@ -38,7 +37,7 @@ class JwtTokenProviderTest {
             )
         )
         Assertions.assertEquals("user", actual["sub"])
-        Assertions.assertEquals(ArrayList<String>(), actual["auth"])
+        Assertions.assertEquals(ArrayList<String>(), actual["roles"])
         Assertions.assertNotNull(actual["exp"])
     }
 
@@ -52,7 +51,7 @@ class JwtTokenProviderTest {
         val actual = jwtTokenProvider.getJwtClaims(jwtTokenProvider.getAuthToken(createAuthentication()))
 
         Assertions.assertEquals("user", actual["sub"])
-        Assertions.assertEquals(listOf("role"), actual["auth"])
+        Assertions.assertEquals(listOf("role"), actual["roles"])
         Assertions.assertNotNull(actual["exp"])
     }
 

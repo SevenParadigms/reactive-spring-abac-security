@@ -3,10 +3,9 @@ package io.github.sevenparadigms.abac.security.context
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import io.github.sevenparadigms.abac.Constants
-import io.github.sevenparadigms.abac.Constants.JWT_EXPIRE_PROPERTY
+import io.github.sevenparadigms.abac.configuration.JwtProperties
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.http.server.reactive.ServerHttpResponse
@@ -18,14 +17,12 @@ import org.springframework.web.server.WebSession
 import java.time.Duration
 
 @Component
-class ExchangeContext(
-    @Value("\${$JWT_EXPIRE_PROPERTY:300}") var expiration: String
-) {
+class ExchangeContext(jwt: JwtProperties) {
 
     val attributes: Cache<String, ServerWebExchange> by lazy {
         CacheBuilder.newBuilder()
             .concurrencyLevel(Runtime.getRuntime().availableProcessors())
-            .expireAfterWrite(Duration.ofSeconds(expiration.toLong()))
+            .expireAfterWrite(Duration.ofSeconds(jwt.expiration))
             .build()
     }
 

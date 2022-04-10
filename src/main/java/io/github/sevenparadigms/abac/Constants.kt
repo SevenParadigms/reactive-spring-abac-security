@@ -8,7 +8,7 @@ object Constants {
     const val ROLE_USER = "ROLE_USER"
     const val ANONYMOUS = "ROLE_ANONYMOUS"
 
-    const val AUTHORITIES_KEY = "roles"
+    const val ROLES_KEY = "roles"
 
     const val JWT_CACHE = "jwt"
     const val JWT_CACHE_REFRESH = "refresh"
@@ -26,18 +26,8 @@ object Constants {
 
     const val ABAC_URL_PROPERTY = "spring.security.abac.url"
 
-    const val JWT_AUTHORIZE_PROPERTY = "spring.security.jwt.header-authorize"
-    const val JWT_SKIP_TOKEN_PROPERTY = "spring.security.jwt.skip-token-validation"
     const val JWT_PUBLIC_PROPERTY = "spring.security.jwt.public-key"
     const val JWT_SECRET_PROPERTY = "spring.security.jwt.secret-key"
-    const val JWT_EXPIRE_PROPERTY = "spring.security.jwt.expiration"
-    const val JWT_ITERATION_PROPERTY = "spring.security.jwt.iteration"
-    const val JWT_REFRESH_EXPIRE_PROPERTY = "spring.security.jwt.refresh-expiration"
-    const val JWT_ALGORITHM_PROPERTY = "spring.security.jwt.algorithm"
-    const val JWT_KEYSTORE_PATH_PROPERTY = "spring.security.jwt.keystore-path"
-    const val JWT_KEYSTORE_TYPE_PROPERTY = "spring.security.jwt.keystore-type"
-    const val JWT_KEYSTORE_ALIAS_PROPERTY = "spring.security.jwt.keystore-alias"
-    const val JWT_KEYSTORE_PASSWORD_PROPERTY = "spring.security.jwt.keystore-password"
 
     const val JWT_CACHE_WRITE = "spring.cache.jwt.expireAfterWrite"
     const val JWT_CACHE_ACCESS = "spring.cache.jwt.expireAfterAccess"

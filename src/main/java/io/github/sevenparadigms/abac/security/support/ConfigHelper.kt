@@ -6,9 +6,8 @@ import io.github.sevenparadigms.abac.Constants.AUTHORIZE_KEY
 import io.github.sevenparadigms.abac.Constants.AUTHORIZE_LOGIN
 import io.github.sevenparadigms.abac.Constants.AUTHORIZE_ROLES
 import io.github.sevenparadigms.abac.Constants.BEARER
-import io.github.sevenparadigms.abac.Constants.JWT_EXPIRE_PROPERTY
-import io.github.sevenparadigms.abac.Constants.JWT_SKIP_TOKEN_PROPERTY
 import io.github.sevenparadigms.abac.Constants.ROLE_USER
+import io.github.sevenparadigms.abac.configuration.JwtProperties
 import io.github.sevenparadigms.abac.getBearerToken
 import io.github.sevenparadigms.abac.hasHeader
 import io.github.sevenparadigms.abac.security.auth.data.AuthResponse
@@ -83,7 +82,7 @@ open class ConfigHelper {
                     )
                 )
             }
-            val skipTokenValidation = Beans.getProperty(JWT_SKIP_TOKEN_PROPERTY, Boolean::class.java, false)
+            val skipTokenValidation = Beans.of(JwtProperties::class.java).skipTokenValidation
             if (skipTokenValidation) {
                 return@ServerAuthenticationConverter skipValidation(bearerToken.substring(BEARER.length))
             }
@@ -103,7 +102,7 @@ open class ConfigHelper {
     fun authorize(serverRequest: ServerRequest): Mono<ServerResponse> {
         val jwtTokenProvider = Beans.of(JwtTokenProvider::class.java)
         val authenticationManager = Beans.of(ReactiveAuthenticationManager::class.java)
-        val expiration = Beans.getProperty(JWT_EXPIRE_PROPERTY, StringUtils.EMPTY)
+        val expiration = Beans.of(JwtProperties::class.java).expiration
         return serverRequest.bodyToMono(UserPrincipal::class.java)
             .filter { !ObjectUtils.isEmpty(it.login) && !ObjectUtils.isEmpty(it.password) }
             .switchIfEmpty(Mono.error { throw BadCredentialsException("Login and password required") })
@@ -112,7 +111,7 @@ open class ConfigHelper {
             .flatMap { ok().bodyValue(AuthResponse(
                 tokenType = BEARER.trim().lowercase(),
                 accessToken = it,
-                expiresIn = expiration.toInt(),
+                expiresIn = expiration,
                 refreshToken = jwtTokenProvider.getRefreshToken(it)
             )) }
     }
@@ -129,12 +128,12 @@ open class ConfigHelper {
                 val authentication = jwtTokenProvider.getAuthToken(
                     UsernamePasswordAuthenticationToken(cacheContext.t1, null, cacheContext.t1.authorities)
                 )
-                val expiration = Beans.getProperty(JWT_EXPIRE_PROPERTY, StringUtils.EMPTY)
+                val expiration = Beans.of(JwtProperties::class.java).expiration
                 JwtCache.revoke(refreshTuple.t1).evictRefresh(refreshToken.get())
                 return ok().bodyValue(AuthResponse(
                     tokenType = BEARER.trim().lowercase(),
                     accessToken = authentication,
-                    expiresIn = expiration.toInt(),
+                    expiresIn = expiration,
                     refreshToken = jwtTokenProvider.getRefreshToken(authentication)
                 ))
             } else {
@@ -148,7 +147,7 @@ open class ConfigHelper {
     }
 
     private fun skipValidation(authToken: String): Mono<Authentication> {
-        val expirationProperty = Beans.of(JwtTokenProvider::class.java).expiration.toInt()
+        val expirationProperty = Beans.of(JwtProperties::class.java).expiration
         return Mono.just(authToken)
             .handle { token, sink ->
                 val claims =
@@ -163,7 +162,7 @@ open class ConfigHelper {
                 } else {
                     val authorities: Collection<GrantedAuthority> =
                         Arrays.stream(
-                            claims[Constants.AUTHORITIES_KEY].toString().split(Dsl.COMMA.toRegex()).toTypedArray()
+                            claims[Constants.ROLES_KEY].toString().split(Dsl.COMMA.toRegex()).toTypedArray()
                         )
                             .map { role -> SimpleGrantedAuthority(role) }
                             .collect(Collectors.toList())

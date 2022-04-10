@@ -11,7 +11,7 @@ data class AuthResponse(
     var accessToken: String? = null,
 
     @JsonProperty("expires_in")
-    var expiresIn: Int? = null,
+    var expiresIn: Long? = null,
 
     @JsonProperty("refresh_token")
     var refreshToken: String? = null

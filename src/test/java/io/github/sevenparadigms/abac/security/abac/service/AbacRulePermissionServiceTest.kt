@@ -20,10 +20,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import reactor.core.publisher.Flux
 import java.util.*
 
-@ExtendWith(SpringExtension::class)
 @ContextConfiguration(classes = [ServiceConfiguration::class])
+@ExtendWith(SpringExtension::class)
 class AbacRulePermissionServiceTest {
-
     @Autowired
     private lateinit var abacRulePermissionService: AbacRulePermissionService
 

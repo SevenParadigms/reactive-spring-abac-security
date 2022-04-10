@@ -2,7 +2,6 @@ package io.github.sevenparadigms.abac.configuration
 
 import io.github.sevenparadigms.abac.Constants
 import io.github.sevenparadigms.abac.Constants.ABAC_URL_PROPERTY
-import io.github.sevenparadigms.abac.Constants.JWT_EXPIRE_PROPERTY
 import io.github.sevenparadigms.abac.security.abac.data.AbacRuleRepository
 import io.github.sevenparadigms.abac.security.abac.service.AbacRulePermissionService
 import io.github.sevenparadigms.abac.security.auth.encrypt.JwtTokenProvider
@@ -10,6 +9,7 @@ import io.github.sevenparadigms.abac.security.support.ConfigHelper
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -37,6 +37,7 @@ import org.springframework.web.reactive.function.server.router
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 @ComponentScan(basePackageClasses = [Constants::class])
+@EnableConfigurationProperties(JwtProperties::class)
 @Import(Beans::class)
 class SecurityConfig(
     private val jwtTokenProvider: JwtTokenProvider
@@ -81,11 +82,10 @@ class SecurityConfig(
     }
 
     @Bean
-    fun authenticationWebFilter(authenticationManager: ReactiveAuthenticationManager) =
+    fun authenticationWebFilter(authenticationManager: ReactiveAuthenticationManager, jwt: JwtProperties) =
         AuthenticationWebFilter(authenticationManager).also {
-            val isAuthorizeKeyEnabled = Beans.getProperty(Constants.JWT_AUTHORIZE_PROPERTY, Boolean::class.java, false)
-            it.setRequiresAuthenticationMatcher(jwtHeadersExchangeMatcher(isAuthorizeKeyEnabled))
-            it.setServerAuthenticationConverter(tokenAuthenticationConverter(isAuthorizeKeyEnabled, jwtTokenProvider))
+            it.setRequiresAuthenticationMatcher(jwtHeadersExchangeMatcher(jwt.headerAuthorize))
+            it.setServerAuthenticationConverter(tokenAuthenticationConverter(jwt.headerAuthorize, jwtTokenProvider))
         }
 
     @Bean
@@ -94,7 +94,7 @@ class SecurityConfig(
         R2dbcUtils.getRepository(url, AbacRuleRepository::class.java)
 
     @Bean
-    @ConditionalOnProperty(JWT_EXPIRE_PROPERTY)
+    @ConditionalOnProperty(ABAC_URL_PROPERTY)
     fun route(): RouterFunction<ServerResponse> = router {
         ("/token").nest {
             accept(MediaType.APPLICATION_JSON).nest {
