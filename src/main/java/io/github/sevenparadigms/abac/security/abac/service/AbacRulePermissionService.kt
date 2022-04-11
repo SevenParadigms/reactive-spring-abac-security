@@ -9,6 +9,7 @@ import io.github.sevenparadigms.abac.security.context.ExchangeContext
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
 import org.sevenparadigms.kotlin.common.debug
+import org.sevenparadigms.kotlin.common.getBoolean
 import org.sevenparadigms.kotlin.common.objectToJson
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.security.access.expression.DenyAllPermissionEvaluator
@@ -39,8 +40,8 @@ class AbacRulePermissionService(
                 subject, domainObject, action, AbacEnvironment(ip = exchangeContext.getRemoteIp(subject.username))
             )
             result = abacRuleRepository.findAllByDomainType(domainObject.javaClass.simpleName)
-                .filter { it.target.getValue(context, Boolean::class.java)!! }
-                .any { it.condition.getValue(context, Boolean::class.java)!! }
+                .filter { it.target.getBoolean(context) }
+                .any { it.condition.getBoolean(context) }
                 .awaitFirst()
         }
         return result

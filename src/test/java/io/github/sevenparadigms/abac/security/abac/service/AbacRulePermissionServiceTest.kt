@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
+import org.sevenparadigms.kotlin.common.parseExpression
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.r2dbc.repository.query.Dsl
-import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.GrantedAuthority
@@ -81,14 +81,13 @@ class AbacRulePermissionServiceTest {
 
     private fun createAbacRules(): Flux<AbacRule> {
         val rules: MutableList<AbacRule> = ArrayList()
-        val parser = SpelExpressionParser()
         rules.add(
             AbacRule(
                 UUID.randomUUID(),
                 "rule",
                 "Dsl",
-                parser.parseExpression("action == 'findAll' and subject.roles.contains('ROLE_ADMIN')"),
-                parser.parseExpression("domainObject.sort == 'id:desc'")
+                "action == 'findAll' and subject.roles.contains('ROLE_ADMIN')".parseExpression(),
+                "domainObject.sort == 'id:desc'".parseExpression()
             )
         )
         rules.add(
@@ -96,8 +95,8 @@ class AbacRulePermissionServiceTest {
                 UUID.randomUUID(),
                 "ip rule",
                 "Dsl",
-                parser.parseExpression("action == 'findAll' and environment.ip == '127.0.0.1'"),
-                parser.parseExpression("domainObject.sort == 'id:desc'")
+                "action == 'findAll' and environment.ip == '127.0.0.1'".parseExpression(),
+                "domainObject.sort == 'id:desc'".parseExpression()
             )
         )
         return Flux.fromIterable(rules)
