@@ -6,7 +6,6 @@ import io.github.sevenparadigms.abac.configuration.JwtProperties
 import io.github.sevenparadigms.abac.security.auth.data.RevokeTokenEvent
 import io.github.sevenparadigms.abac.security.support.JwtCache
 import io.jsonwebtoken.*
-import io.jsonwebtoken.security.SignatureException
 import org.apache.commons.codec.digest.MurmurHash2
 import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils

@@ -19,7 +19,6 @@ import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils
 import org.sevenparadigms.kotlin.common.parseJson
 import org.springframework.data.r2dbc.config.Beans
-import org.springframework.data.r2dbc.repository.query.Dsl
 import org.springframework.data.r2dbc.support.DslUtils
 import org.springframework.data.r2dbc.support.JsonUtils
 import org.springframework.http.HttpHeaders
@@ -47,7 +46,6 @@ import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import java.util.*
 import java.util.concurrent.TimeUnit
-import java.util.stream.Collectors
 
 open class ConfigHelper {
     fun unauthorizedEntryPoint() =
@@ -161,11 +159,8 @@ open class ConfigHelper {
                     error("Expired JWT token")
                 } else {
                     val authorities: Collection<GrantedAuthority> =
-                        Arrays.stream(
-                            claims[Constants.ROLES_KEY].toString().split(Dsl.COMMA.toRegex()).toTypedArray()
-                        )
+                            (claims[Constants.ROLES_KEY] as List<String>)
                             .map { role -> SimpleGrantedAuthority(role) }
-                            .collect(Collectors.toList())
                     val principal = User(claims[Claims.SUBJECT].toString(), StringUtils.EMPTY, authorities)
                     sink.next(UsernamePasswordAuthenticationToken(principal, claims, authorities))
                 }
