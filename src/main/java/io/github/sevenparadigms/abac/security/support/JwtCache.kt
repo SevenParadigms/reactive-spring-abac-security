@@ -13,8 +13,8 @@ import org.sevenparadigms.kotlin.common.info
 import org.springframework.cache.Cache
 import org.springframework.cache.CacheManager
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.data.r2dbc.config.Beans
 import org.springframework.data.r2dbc.repository.cache.CaffeineGuidedCacheManager
+import org.springframework.data.r2dbc.support.Beans
 import org.springframework.security.core.userdetails.User
 import reactor.util.function.Tuple2
 import reactor.util.function.Tuple3

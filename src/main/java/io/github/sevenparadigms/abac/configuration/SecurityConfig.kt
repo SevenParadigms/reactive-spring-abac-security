@@ -8,14 +8,14 @@ import io.github.sevenparadigms.abac.security.auth.encrypt.JwtTokenProvider
 import io.github.sevenparadigms.abac.security.support.ConfigHelper
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
 import org.springframework.core.env.Environment
-import org.springframework.data.r2dbc.config.Beans
+import org.springframework.data.r2dbc.support.Beans
 import org.springframework.data.r2dbc.support.R2dbcUtils
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
@@ -38,7 +38,7 @@ import org.springframework.web.reactive.function.server.router
 @EnableReactiveMethodSecurity
 @ComponentScan(basePackageClasses = [Constants::class])
 @EnableConfigurationProperties(JwtProperties::class)
-@Import(Beans::class)
+@ImportAutoConfiguration(Beans::class)
 class SecurityConfig(
     private val jwtTokenProvider: JwtTokenProvider
 ) : ConfigHelper() {

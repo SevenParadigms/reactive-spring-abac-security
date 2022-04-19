@@ -18,7 +18,7 @@ import org.apache.commons.codec.digest.MurmurHash2
 import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils
 import org.sevenparadigms.kotlin.common.parseJson
-import org.springframework.data.r2dbc.config.Beans
+import org.springframework.data.r2dbc.support.Beans
 import org.springframework.data.r2dbc.support.DslUtils
 import org.springframework.data.r2dbc.support.JsonUtils
 import org.springframework.http.HttpHeaders
