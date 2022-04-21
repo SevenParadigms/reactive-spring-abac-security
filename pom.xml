@@ -69,6 +69,7 @@
     <properties>
         <kotlin.version>1.6.21</kotlin.version>
         <kotlinx.version>1.6.1-native-mt</kotlinx.version>
+        <spring.version>5.3.19</spring.version>
         <r2dbc-dsl.version>4.7.9</r2dbc-dsl.version>
         <jsonwebtoken.version>0.11.2</jsonwebtoken.version>
         <jackson-databind.version>2.13.2.2</jackson-databind.version>
