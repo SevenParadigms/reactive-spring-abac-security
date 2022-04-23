@@ -33,6 +33,7 @@ object Constants {
     const val JWT_CACHE_ACCESS = "spring.cache.jwt.expireAfterAccess"
 
     val whitelist = arrayOf(
+        "/index.html",
         "/actuator/**",
         "/static/**",
         "/token/**",
