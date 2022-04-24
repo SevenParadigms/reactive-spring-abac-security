@@ -11,7 +11,7 @@ The Maven Central dependency instead of the library `spring-data-abac-security`:
 <dependency>
     <groupId>io.github.sevenparadigms</groupId>
     <artifactId>reactive-spring-abac-security</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1</version>
 </dependency>
 ----
 
@@ -50,7 +50,7 @@ spring.cache:
   jwt.maximumSize: 10000
 ----
 
-if its property is nothing then used `spring.security.jwt.expiration` property in seconds. And it both is nothing then set default expire to 5 minutes. Token caching is up performance over 15k requests per second.
+if its property is nothing then used `spring.security.jwt.expiration` property in seconds. And it both is nothing then set default expire to 5 minutes. Token caching is up performance over 15k requests per second for authenticated request.
 
 For get bearer token from `/token` send POST:
 

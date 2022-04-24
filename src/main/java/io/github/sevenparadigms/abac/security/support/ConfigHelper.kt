@@ -80,8 +80,7 @@ open class ConfigHelper {
                     )
                 )
             }
-            val skipTokenValidation = Beans.of(JwtProperties::class.java).skipTokenValidation
-            if (skipTokenValidation) {
+            if (Beans.of(JwtProperties::class.java).skipTokenValidation) {
                 return@ServerAuthenticationConverter skipValidation(bearerToken.substring(BEARER.length))
             }
             Mono.just(jwtTokenProvider.getAuthentication(bearerToken.substring(BEARER.length)))
