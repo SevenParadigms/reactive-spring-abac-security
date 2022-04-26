@@ -5,7 +5,6 @@ import io.github.sevenparadigms.abac.Constants.JWT_CACHE_ACCESS
 import io.github.sevenparadigms.abac.Constants.JWT_CACHE_WRITE
 import io.github.sevenparadigms.abac.configuration.JwtProperties
 import io.github.sevenparadigms.abac.security.auth.data.RevokeTokenEvent
-import org.apache.commons.beanutils.ConvertUtils
 import org.apache.commons.codec.digest.MurmurHash2
 import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils
@@ -65,9 +64,9 @@ object JwtCache {
                     val expiration = Beans.of(JwtProperties::class.java).expiration
                     if (ObjectUtils.isNotEmpty(expiration)) {
                         val timeout = expiration * 1000
-                        setDefaultExpireAfterAccess(ConvertUtils.convert(timeout))
+                        setDefaultExpireAfterWrite(timeout)
                     } else {
-                        setDefaultExpireAfterAccess("300000")
+                        setDefaultExpireAfterWrite(300000)
                     }
                 }
             })

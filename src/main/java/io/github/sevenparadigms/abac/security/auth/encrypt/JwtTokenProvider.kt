@@ -46,7 +46,6 @@ class JwtTokenProvider(val jwt: JwtProperties) : ApplicationListener<RevokeToken
             privateKey
 
     fun getAuthToken(authentication: Authentication): String {
-        val expireDate = Date(Date().time + jwt.expiration * 1000)
         val authorizeKey = Jwts.builder()
             .setSubject(authentication.name)
             .claim(
@@ -61,7 +60,7 @@ class JwtTokenProvider(val jwt: JwtProperties) : ApplicationListener<RevokeToken
             )
             .setExpiration(Date(Date().time + jwt.expiration * 1000))
             .compact()
-        JwtCache.put(authorizeKey, authentication.principal, expireDate)
+        JwtCache.put(authorizeKey, authentication.principal, Date(Date().time + jwt.expiration * 1000))
         return authorizeKey
     }
 

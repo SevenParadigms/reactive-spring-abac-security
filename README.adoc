@@ -11,7 +11,7 @@ The Maven Central dependency instead of the library `spring-data-abac-security`:
 <dependency>
     <groupId>io.github.sevenparadigms</groupId>
     <artifactId>reactive-spring-abac-security</artifactId>
-    <version>1.4.1</version>
+    <version>1.4.2</version>
 </dependency>
 ----
 
@@ -45,9 +45,8 @@ Token cache have named is `jwt` and it's setting in application.yml in milliseco
 [source,yaml]
 ----
 spring.cache:
-  jwt.expireAfterAccess: 500 # milliseconds
-  jwt.expireAfterWrite: 1000 # milliseconds
-  jwt.maximumSize: 10000
+  jwt.expireAfterWrite: 300000 # milliseconds (by default 5 minutes)
+  jwt.maximumSize: 10000 (by default)
 ----
 
 if its property is nothing then used `spring.security.jwt.expiration` property in seconds. And it both is nothing then set default expire to 5 minutes. Token caching is up performance over 15k requests per second for authenticated request.

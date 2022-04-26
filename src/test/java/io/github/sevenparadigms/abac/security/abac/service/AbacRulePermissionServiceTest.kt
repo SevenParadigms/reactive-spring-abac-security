@@ -38,7 +38,7 @@ class AbacRulePermissionServiceTest {
         val authorities = Collections.singletonList(GrantedAuthority { "USER" })
         val authentication: Authentication =
             UsernamePasswordAuthenticationToken(createUser("user", authorities), "password")
-        val dsl = Dsl(null.toString(), 0, 0, "id:desc", null.toString(), null.toString())
+        val dsl = Dsl(null.toString(), 0, 0, "id:desc", null.toString(), null.toString(), -1, false)
 
         Assertions.assertTrue(abacRulePermissionService.hasPermission(authentication, dsl, "findAll"))
     }
@@ -50,7 +50,7 @@ class AbacRulePermissionServiceTest {
         val authorities = Collections.singletonList(GrantedAuthority { "ROLE_ADMIN" })
         val authentication: Authentication =
             UsernamePasswordAuthenticationToken(createUser("user", authorities), "password")
-        val dsl = Dsl(null.toString(), 0, 0, "id:desc", null.toString(), null.toString())
+        val dsl = Dsl(null.toString(), 0, 0, "id:desc", null.toString(), null.toString(), -1, false)
 
         Assertions.assertTrue(abacRulePermissionService.hasPermission(authentication, dsl, "findAll"))
     }
@@ -62,7 +62,7 @@ class AbacRulePermissionServiceTest {
         val authorities = Collections.singletonList(GrantedAuthority { "USER" })
         val authentication: Authentication =
             UsernamePasswordAuthenticationToken(createUser("guest", authorities), "password")
-        val dsl = Dsl(null.toString(), 0, 0, "id:desc", null.toString(), null.toString())
+        val dsl = Dsl(null.toString(), 0, 0, "id:desc", null.toString(), null.toString(), -1, false)
 
         Assertions.assertFalse(abacRulePermissionService.hasPermission(authentication, dsl, "findAll"))
     }
@@ -74,7 +74,7 @@ class AbacRulePermissionServiceTest {
         val authorities = Collections.singletonList(GrantedAuthority { "ROLE_ADMIN" })
         val authentication: Authentication =
             UsernamePasswordAuthenticationToken(createUser("guest", authorities), "password")
-        val dsl = Dsl(null.toString(), 0, 0, "id:desc", null.toString(), null.toString())
+        val dsl = Dsl(null.toString(), 0, 0, "id:desc", null.toString(), null.toString(), -1, false)
 
         Assertions.assertTrue(abacRulePermissionService.hasPermission(authentication, dsl, "findAll"))
     }
