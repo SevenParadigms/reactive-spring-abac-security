@@ -4,6 +4,7 @@ import io.github.sevenparadigms.abac.Constants
 import io.github.sevenparadigms.abac.Constants.ABAC_URL_PROPERTY
 import io.github.sevenparadigms.abac.security.abac.data.AbacRuleRepository
 import io.github.sevenparadigms.abac.security.abac.service.AbacRulePermissionService
+import io.github.sevenparadigms.abac.security.auth.CurrentUserResolver
 import io.github.sevenparadigms.abac.security.auth.encrypt.JwtTokenProvider
 import io.github.sevenparadigms.abac.security.support.ConfigHelper
 import org.springframework.beans.factory.annotation.Value
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
+import org.springframework.data.r2dbc.repository.security.AuthenticationIdentifierResolver
 import org.springframework.data.r2dbc.support.Beans
 import org.springframework.data.r2dbc.support.R2dbcUtils
 import org.springframework.http.HttpMethod
@@ -105,4 +107,7 @@ class SecurityConfig(
             }
         }
     }
+
+    @Bean
+    fun currentUserResolver(): AuthenticationIdentifierResolver = CurrentUserResolver()
 }

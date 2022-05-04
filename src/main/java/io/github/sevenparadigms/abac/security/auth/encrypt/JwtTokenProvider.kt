@@ -9,9 +9,9 @@ import io.jsonwebtoken.*
 import org.apache.commons.codec.digest.MurmurHash2
 import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils
-import org.sevenparadigms.kotlin.common.error
 import org.sevenparadigms.kotlin.common.loadResource
 import org.sevenparadigms.kotlin.common.remove
+import org.sevenparadigms.kotlin.common.severe
 import org.springframework.context.ApplicationListener
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -132,15 +132,15 @@ class JwtTokenProvider(val jwt: JwtProperties) : ApplicationListener<RevokeToken
                 .build()
                 .parseClaimsJws(authorizeKey).body
         } catch (e: SignatureException) {
-            error("Invalid JWT signature trace: {}", e)
+            severe("Invalid JWT signature trace: {}", e)
         } catch (e: MalformedJwtException) {
-            error("Invalid JWT token trace: {}", e)
+            severe("Invalid JWT token trace: {}", e)
         } catch (e: ExpiredJwtException) {
-            error("Expired JWT token trace: {}", e)
+            severe("Expired JWT token trace: {}", e)
         } catch (e: UnsupportedJwtException) {
-            error("Unsupported JWT token trace: {}", e)
+            severe("Unsupported JWT token trace: {}", e)
         } catch (e: IllegalArgumentException) {
-            error("JWT token compact of handler are invalid trace: {}", e)
+            severe("JWT token compact of handler are invalid trace: {}", e)
         }
         throw BadCredentialsException("Invalid token")
     }
