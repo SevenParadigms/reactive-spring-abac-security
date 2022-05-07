@@ -22,8 +22,9 @@ class AuthenticationConfig {
     @Bean
     fun authenticationManager(
         userDetailsService: ReactiveUserDetailsService,
-        passwordEncoder: PasswordEncoder
-    ): ReactiveAuthenticationManager = AuthenticationManagerImpl(userDetailsService, passwordEncoder)
+        passwordEncoder: PasswordEncoder,
+        userRepository: UserRepository
+    ): ReactiveAuthenticationManager = AuthenticationManagerImpl(userDetailsService, passwordEncoder, userRepository)
 
     @Bean
     fun reactiveUserDetailsService(userRepository: UserRepository): ReactiveUserDetailsService =

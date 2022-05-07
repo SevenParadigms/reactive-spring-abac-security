@@ -5,6 +5,6 @@ import org.springframework.data.r2dbc.repository.security.AuthenticationIdentifi
 
 class CurrentUserResolver : AuthenticationIdentifierResolver {
     override fun resolve(): Any {
-        return ExchangeHolder.getUser()
+        return ExchangeHolder.getUserPrincipal()
     }
 }

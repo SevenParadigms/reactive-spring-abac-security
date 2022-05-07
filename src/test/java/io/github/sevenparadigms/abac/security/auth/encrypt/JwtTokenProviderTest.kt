@@ -12,6 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
+import java.util.*
 
 class JwtTokenProviderTest : AbstractTestEnvironment() {
     @Autowired
@@ -26,29 +27,29 @@ class JwtTokenProviderTest : AbstractTestEnvironment() {
     @Test
     fun getToken() {
         Assertions.assertEquals(jwtProperties.keystorePath, "gateway.p12")
-        Assertions.assertNotNull(jwtTokenProvider.getAuthToken(createAuthentication()))
+        Assertions.assertNotNull(jwtTokenProvider.getAuthenticationToken(createAuthentication()))
     }
 
     @Test
     fun getClaims_whenNoAuthorities() {
-        val actual = jwtTokenProvider.getJwtClaims(
-            jwtTokenProvider.getAuthToken(
-                UsernamePasswordAuthenticationToken("user", "password")
+        val actual = jwtTokenProvider.getAuthenticationTokenClaims(
+            jwtTokenProvider.getAuthenticationToken(
+                UsernamePasswordAuthenticationToken("user", UUID.randomUUID(), listOf(SimpleGrantedAuthority("role")))
             )
         )
         Assertions.assertEquals("user", actual["sub"])
-        Assertions.assertEquals(ArrayList<String>(), actual["roles"])
+        Assertions.assertEquals(listOf("role"), actual["roles"])
         Assertions.assertNotNull(actual["exp"])
     }
 
     @Test
     fun getClaims_whenEmptyToken() {
-        Assertions.assertThrows(BadCredentialsException::class.java) { jwtTokenProvider.getJwtClaims("") }
+        Assertions.assertThrows(BadCredentialsException::class.java) { jwtTokenProvider.getAuthenticationTokenClaims("") }
     }
 
     @Test
     fun getClaims() {
-        val actual = jwtTokenProvider.getJwtClaims(jwtTokenProvider.getAuthToken(createAuthentication()))
+        val actual = jwtTokenProvider.getAuthenticationTokenClaims(jwtTokenProvider.getAuthenticationToken(createAuthentication()))
 
         Assertions.assertEquals("user", actual["sub"])
         Assertions.assertEquals(listOf("role"), actual["roles"])
@@ -57,10 +58,10 @@ class JwtTokenProviderTest : AbstractTestEnvironment() {
 
     @Test
     fun getAuthentication() {
-        val token = jwtTokenProvider.getAuthToken(createAuthentication())
+        val token = jwtTokenProvider.getAuthenticationToken(createAuthentication())
         val authentication = jwtTokenProvider.getAuthentication(token)
         Assertions.assertTrue((authentication.principal as User).username == "user")
-        Assertions.assertEquals(authentication.authorities.map { it.authority }, listOf("role"))
+        Assertions.assertEquals(authentication.authorities.map { it.authority }.toList(), listOf("role"))
     }
 
     private fun createAuthentication(): Authentication {
@@ -71,7 +72,7 @@ class JwtTokenProviderTest : AbstractTestEnvironment() {
                 "",
                 listOf(SimpleGrantedAuthority("role"))
             ),
-            null,
+            UUID.randomUUID(),
             listOf(SimpleGrantedAuthority("role"))
         )
     }

@@ -6,12 +6,14 @@ import io.github.sevenparadigms.abac.Constants.AUTHORIZE_KEY
 import io.github.sevenparadigms.abac.Constants.AUTHORIZE_LOGIN
 import io.github.sevenparadigms.abac.Constants.AUTHORIZE_ROLES
 import io.github.sevenparadigms.abac.Constants.BEARER
+import io.github.sevenparadigms.abac.Constants.REFRESH_TOKEN
 import io.github.sevenparadigms.abac.Constants.ROLE_USER
 import io.github.sevenparadigms.abac.configuration.JwtProperties
 import io.github.sevenparadigms.abac.getBearerToken
 import io.github.sevenparadigms.abac.hasHeader
 import io.github.sevenparadigms.abac.security.auth.data.AuthResponse
 import io.github.sevenparadigms.abac.security.auth.data.UserPrincipal
+import io.github.sevenparadigms.abac.security.auth.data.toUser
 import io.github.sevenparadigms.abac.security.auth.encrypt.JwtTokenProvider
 import io.jsonwebtoken.Claims
 import org.apache.commons.codec.digest.MurmurHash2
@@ -44,6 +46,9 @@ import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.util.function.component1
+import reactor.kotlin.core.util.function.component2
+import reactor.kotlin.core.util.function.component3
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -87,8 +92,9 @@ open class ConfigHelper {
         }
 
     fun jwtHeadersExchangeMatcher(isAuthorizeKeyEnabled: Boolean) = ServerWebExchangeMatcher { serverWebExchange: ServerWebExchange ->
-        val request = Mono.just(serverWebExchange).map { obj: ServerWebExchange -> obj.request }
-        request.map { obj: ServerHttpRequest -> obj.headers }
+        Mono.just(serverWebExchange)
+            .map { obj: ServerWebExchange -> obj.request }
+            .map { obj: ServerHttpRequest -> obj.headers }
             .filter {
                 it.containsKey(HttpHeaders.AUTHORIZATION) || (isAuthorizeKeyEnabled && it.containsKey(AUTHORIZE_KEY))
             }
@@ -104,7 +110,7 @@ open class ConfigHelper {
             .filter { !ObjectUtils.isEmpty(it.login) && !ObjectUtils.isEmpty(it.password) }
             .switchIfEmpty(Mono.error { throw BadCredentialsException("Login and password required") })
             .flatMap { authenticationManager.authenticate(UsernamePasswordAuthenticationToken(it.login, it.password)) }
-            .map { jwtTokenProvider.getAuthToken(it) }
+            .map { jwtTokenProvider.getAuthenticationToken(it) }
             .flatMap { ok().bodyValue(AuthResponse(
                 tokenType = BEARER.trim().lowercase(),
                 accessToken = it,
@@ -116,23 +122,32 @@ open class ConfigHelper {
     fun refresh(serverRequest: ServerRequest): Mono<ServerResponse> {
         val error: String
         val jwtTokenProvider = Beans.of(JwtTokenProvider::class.java)
-        val refreshToken = serverRequest.queryParam("refresh_token")
+        val refreshToken = serverRequest.queryParam(REFRESH_TOKEN)
         if (serverRequest.hasHeader(HttpHeaders.AUTHORIZATION) && refreshToken.isPresent && ObjectUtils.isNotEmpty(refreshToken.get())) {
-            val refreshTuple = JwtCache.getRefresh(refreshToken.get())
+            val (hash, expire) = JwtCache.getRefresh(refreshToken.get())!!
             val authorizeKey = serverRequest.getBearerToken()
-            if (refreshTuple != null && MurmurHash2.hash64(authorizeKey) == refreshTuple.t1 && Date().before(refreshTuple.t2)) {
-                val cacheContext = JwtCache.get(refreshTuple.t1)!!
-                val authentication = jwtTokenProvider.getAuthToken(
-                    UsernamePasswordAuthenticationToken(cacheContext.t1, null, cacheContext.t1.authorities)
-                )
-                val expiration = Beans.of(JwtProperties::class.java).expiration
-                JwtCache.revoke(refreshTuple.t1).evictRefresh(refreshToken.get())
-                return ok().bodyValue(AuthResponse(
-                    tokenType = BEARER.trim().lowercase(),
-                    accessToken = authentication,
-                    expiresIn = expiration,
-                    refreshToken = jwtTokenProvider.getRefreshToken(authentication)
-                ))
+            if (MurmurHash2.hash64(authorizeKey) == hash && Date().before(expire)) {
+                val (principal, expireDate, expired) = JwtCache.get(hash)!!
+                if (!expired) {
+                    val authentication = jwtTokenProvider.getAuthenticationToken(
+                        UsernamePasswordAuthenticationToken(
+                            principal.toUser(),
+                            principal.id,
+                            principal.toUser().authorities
+                        )
+                    )
+                    val expiration = Beans.of(JwtProperties::class.java).expiration
+                    JwtCache.revoke(hash).evictRefresh(refreshToken.get())
+                    return ok().bodyValue(
+                        AuthResponse(
+                            tokenType = BEARER.trim().lowercase(),
+                            accessToken = authentication,
+                            expiresIn = expiration,
+                            refreshToken = jwtTokenProvider.getRefreshToken(authentication)
+                        )
+                    )
+                } else
+                    error = "Bearer token is revoked"
             } else {
                 error = "Actual Bearer token is not found or refresh token is expired"
             }
@@ -159,7 +174,7 @@ open class ConfigHelper {
                 } else {
                     val authorities: Collection<GrantedAuthority> =
                             (claims[Constants.ROLES_KEY] as List<String>)
-                            .map { role -> SimpleGrantedAuthority(role) }
+                            .map { role -> SimpleGrantedAuthority(role) }.toList()
                     val principal = User(claims[Claims.SUBJECT].toString(), StringUtils.EMPTY, authorities)
                     sink.next(UsernamePasswordAuthenticationToken(principal, claims, authorities))
                 }

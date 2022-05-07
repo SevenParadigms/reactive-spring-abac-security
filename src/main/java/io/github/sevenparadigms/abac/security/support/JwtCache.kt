@@ -5,6 +5,7 @@ import io.github.sevenparadigms.abac.Constants.JWT_CACHE_ACCESS
 import io.github.sevenparadigms.abac.Constants.JWT_CACHE_WRITE
 import io.github.sevenparadigms.abac.configuration.JwtProperties
 import io.github.sevenparadigms.abac.security.auth.data.RevokeTokenEvent
+import io.github.sevenparadigms.abac.security.auth.data.UserPrincipal
 import org.apache.commons.codec.digest.MurmurHash2
 import org.apache.commons.lang3.ObjectUtils
 import org.apache.commons.lang3.StringUtils
@@ -14,7 +15,6 @@ import org.springframework.cache.CacheManager
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.r2dbc.repository.cache.CaffeineGuidedCacheManager
 import org.springframework.data.r2dbc.support.Beans
-import org.springframework.security.core.userdetails.User
 import reactor.util.function.Tuple2
 import reactor.util.function.Tuple3
 import reactor.util.function.Tuples
@@ -25,18 +25,18 @@ object JwtCache {
     private var jwtCache: Cache? = null
     private var refreshCache: Cache? = null
 
-    fun put(key: String, user: Any, expireDate: Date, expire: Boolean = false) =
-        put(MurmurHash2.hash64(key), user, expireDate, expire)
+    fun put(key: String, principal: UserPrincipal, expireDate: Date, expired: Boolean = false) =
+        put(MurmurHash2.hash64(key), principal, expireDate, expired)
 
-    fun put(key: Long, user: Any, expireDate: Date, expire: Boolean = false) {
+    fun put(key: Long, principal: UserPrincipal, expireDate: Date, expired: Boolean = false) {
         evict(key)
-        getJwtCache().put(key, Tuples.of(user, expireDate, expire))
+        getJwtCache().put(key, Tuples.of(principal, expireDate, expired))
     }
 
-    fun get(key: String): Tuple3<User, Date, Boolean>? = get(MurmurHash2.hash64(key))
+    fun get(key: String): Tuple3<UserPrincipal, Date, Boolean>? = get(MurmurHash2.hash64(key))
 
-    fun get(key: Long): Tuple3<User, Date, Boolean>? =
-        getJwtCache().get(key, Tuple3::class.java) as Tuple3<User, Date, Boolean>?
+    fun get(key: Long): Tuple3<UserPrincipal, Date, Boolean>? =
+        getJwtCache().get(key, Tuple3::class.java) as Tuple3<UserPrincipal, Date, Boolean>?
 
     fun has(key: String): Boolean = get(key) != null
 
@@ -78,19 +78,17 @@ object JwtCache {
     }
 
     fun putRefresh(key: String, tokenHash: Long, expireDate: Date) {
-        if (refreshCache == null) getJwtCache()
-        refreshCache!!.put(MurmurHash2.hash64(key), Tuples.of(tokenHash, expireDate))
+        getJwtCache().put(MurmurHash2.hash64(key), Tuples.of(tokenHash, expireDate))
     }
 
     fun getRefresh(key: String): Tuple2<Long, Date>? {
-        if (refreshCache == null) getJwtCache()
-        return refreshCache!!.get(MurmurHash2.hash64(key), Tuple2::class.java) as Tuple2<Long, Date>?
+        return getJwtCache().get(MurmurHash2.hash64(key), Tuple2::class.java) as Tuple2<Long, Date>?
     }
 
     fun evictRefresh(key: String) = evictRefresh(MurmurHash2.hash64(key))
 
     fun evictRefresh(key: Long): JwtCache {
-        refreshCache!!.evict(key)
+        getJwtCache().evict(key)
         return this
     }
 }

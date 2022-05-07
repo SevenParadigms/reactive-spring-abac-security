@@ -52,9 +52,10 @@ class AuthConfiguration {
     @ConditionalOnProperty(JWT_SECRET_PROPERTY)
     fun reactiveAuthenticateManager(
         mockUserDetailsService: ReactiveUserDetailsService,
-        passwordEncoder: PasswordEncoder
+        passwordEncoder: PasswordEncoder,
+        userRepository: UserRepository
     ): ReactiveAuthenticationManager {
-        return AuthenticationManagerImpl(mockUserDetailsService, passwordEncoder)
+        return AuthenticationManagerImpl(mockUserDetailsService, passwordEncoder, userRepository)
     }
 
     @Bean

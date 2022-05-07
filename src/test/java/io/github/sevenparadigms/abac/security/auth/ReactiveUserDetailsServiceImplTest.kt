@@ -6,7 +6,6 @@ import io.github.sevenparadigms.abac.security.support.config.AbstractTestEnviron
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
-import org.sevenparadigms.kotlin.common.objectToJson
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService
@@ -47,7 +46,8 @@ class ReactiveUserDetailsServiceImplTest : AbstractTestEnvironment() {
             UUID.randomUUID(),
             "user",
             "password",
-            "[{\"id\":\"8754c717-5661-11ec-b49d-73780888af27\",\"name\":\"ROLE_USER\"}]".objectToJson()
+//            "[{\"id\":\"8754c717-5661-11ec-b49d-73780888af27\",\"name\":\"ROLE_USER\"}]".objectToJson()
+            listOf("ROLE_USER")
         )
     }
 }

@@ -1,5 +1,6 @@
 package io.github.sevenparadigms.abac.security.auth
 
+import io.github.sevenparadigms.abac.security.auth.data.UserRepository
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -10,7 +11,8 @@ import reactor.core.publisher.Mono
 
 class AuthenticationManagerImpl(
     private val userDetailsService: ReactiveUserDetailsService,
-    private val passwordEncoder: PasswordEncoder
+    private val passwordEncoder: PasswordEncoder,
+    private val userRepository: UserRepository
 ) : ReactiveAuthenticationManager {
     override fun authenticate(authentication: Authentication): Mono<Authentication> {
         return if (authentication.isAuthenticated) {
@@ -20,6 +22,10 @@ class AuthenticationManagerImpl(
             .flatMap { userDetailsService.findByUsername(it.name) }
             .filter { passwordEncoder.matches(authentication.credentials as String, it.password) }
             .switchIfEmpty(Mono.error { BadCredentialsException("Invalid credentials") })
-            .map { UsernamePasswordAuthenticationToken(it, null, it.authorities) }
+            .flatMap { userDetails ->
+                userRepository.findByLogin(userDetails.username).map { userPrincipal ->
+                    UsernamePasswordAuthenticationToken(userDetails, userPrincipal.id, userDetails.authorities)
+                }
+            }
     }
 }

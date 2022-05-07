@@ -9,6 +9,7 @@ object Constants {
     const val ANONYMOUS = "ROLE_ANONYMOUS"
 
     const val ROLES_KEY = "roles"
+    const val USER_ID = "id"
 
     const val JWT_CACHE = "jwt"
     const val JWT_CACHE_REFRESH = "refresh"
@@ -19,10 +20,12 @@ object Constants {
     const val AUTHORIZE_IP = "X-Forwarded-For"
 
     const val BEARER = "Bearer "
+    const val REFRESH_TOKEN = "refresh_token"
     const val REQUEST = "Request"
     const val RESPONSE = "Response"
 
     const val PRINCIPAL = "Principal"
+    const val USER_WRAPPER = "Wrapper"
 
     const val ABAC_URL_PROPERTY = "spring.security.abac.url"
 
