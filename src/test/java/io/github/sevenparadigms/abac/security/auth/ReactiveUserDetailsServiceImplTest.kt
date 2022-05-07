@@ -46,7 +46,6 @@ class ReactiveUserDetailsServiceImplTest : AbstractTestEnvironment() {
             UUID.randomUUID(),
             "user",
             "password",
-//            "[{\"id\":\"8754c717-5661-11ec-b49d-73780888af27\",\"name\":\"ROLE_USER\"}]".objectToJson()
             listOf("ROLE_USER")
         )
     }

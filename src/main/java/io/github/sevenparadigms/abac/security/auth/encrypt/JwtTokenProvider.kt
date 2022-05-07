@@ -110,8 +110,10 @@ class JwtTokenProvider(val jwt: JwtProperties) : ApplicationListener<RevokeToken
         }
         val claims = getAuthenticationTokenClaims(authorizeKey)
         val principal = UserPrincipal(
-            id = claims.get(USER_ID, UUID::class.java), login = claims.subject,
-            password = StringUtils.EMPTY, authorities = claims.get(ROLES_KEY, List::class.java) as List<String>
+            id = if (claims.contains(USER_ID)) UUID.fromString(claims.get(USER_ID, String::class.java)) else null,
+            login = claims.subject,
+            password = StringUtils.EMPTY,
+            authorities = claims.get(ROLES_KEY, List::class.java) as List<String>
         )
         val hash = MurmurHash2.hash64(authorizeKey)
         JwtCache.put(hash, principal, claims.expiration)
