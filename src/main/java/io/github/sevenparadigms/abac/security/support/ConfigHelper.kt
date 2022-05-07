@@ -91,16 +91,17 @@ open class ConfigHelper {
             Mono.just(jwtTokenProvider.getAuthentication(bearerToken.substring(BEARER.length)))
         }
 
-    fun jwtHeadersExchangeMatcher(isAuthorizeKeyEnabled: Boolean) = ServerWebExchangeMatcher { serverWebExchange: ServerWebExchange ->
-        Mono.just(serverWebExchange)
-            .map { obj: ServerWebExchange -> obj.request }
-            .map { obj: ServerHttpRequest -> obj.headers }
-            .filter {
-                it.containsKey(HttpHeaders.AUTHORIZATION) || (isAuthorizeKeyEnabled && it.containsKey(AUTHORIZE_KEY))
-            }
-            .flatMap { ServerWebExchangeMatcher.MatchResult.match() }
-            .switchIfEmpty(ServerWebExchangeMatcher.MatchResult.notMatch())
-    }
+    fun jwtHeadersExchangeMatcher(isAuthorizeKeyEnabled: Boolean) =
+        ServerWebExchangeMatcher { serverWebExchange: ServerWebExchange ->
+            Mono.just(serverWebExchange)
+                .map { obj: ServerWebExchange -> obj.request }
+                .map { obj: ServerHttpRequest -> obj.headers }
+                .filter {
+                    it.containsKey(HttpHeaders.AUTHORIZATION) || (isAuthorizeKeyEnabled && it.containsKey(AUTHORIZE_KEY))
+                }
+                .flatMap { ServerWebExchangeMatcher.MatchResult.match() }
+                .switchIfEmpty(ServerWebExchangeMatcher.MatchResult.notMatch())
+        }
 
     fun authorize(serverRequest: ServerRequest): Mono<ServerResponse> {
         val jwtTokenProvider = Beans.of(JwtTokenProvider::class.java)
@@ -111,23 +112,30 @@ open class ConfigHelper {
             .switchIfEmpty(Mono.error { throw BadCredentialsException("Login and password required") })
             .flatMap { authenticationManager.authenticate(UsernamePasswordAuthenticationToken(it.login, it.password)) }
             .map { jwtTokenProvider.getAuthenticationToken(it) }
-            .flatMap { ok().bodyValue(AuthResponse(
-                tokenType = BEARER.trim().lowercase(),
-                accessToken = it,
-                expiresIn = expiration,
-                refreshToken = jwtTokenProvider.getRefreshToken(it)
-            )) }
+            .flatMap { accessToken ->
+                ok().bodyValue(
+                    AuthResponse(
+                        tokenType = BEARER.trim().lowercase(),
+                        accessToken = accessToken,
+                        expiresIn = expiration,
+                        refreshToken = jwtTokenProvider.getRefreshToken(accessToken)
+                    )
+                )
+            }
     }
 
     fun refresh(serverRequest: ServerRequest): Mono<ServerResponse> {
         val error: String
         val jwtTokenProvider = Beans.of(JwtTokenProvider::class.java)
         val refreshToken = serverRequest.queryParam(REFRESH_TOKEN)
-        if (serverRequest.hasHeader(HttpHeaders.AUTHORIZATION) && refreshToken.isPresent && ObjectUtils.isNotEmpty(refreshToken.get())) {
+        if (serverRequest.hasHeader(HttpHeaders.AUTHORIZATION) && refreshToken.isPresent && ObjectUtils.isNotEmpty(
+                refreshToken.get()
+            )
+        ) {
             val (hash, expire) = JwtCache.getRefresh(refreshToken.get())!!
             val authorizeKey = serverRequest.getBearerToken()
             if (MurmurHash2.hash64(authorizeKey) == hash && Date().before(expire)) {
-                val (principal, expireDate, expired) = JwtCache.get(hash)!!
+                val (principal, _, expired) = JwtCache.get(hash)!!
                 if (!expired) {
                     val authentication = jwtTokenProvider.getAuthenticationToken(
                         UsernamePasswordAuthenticationToken(
@@ -153,9 +161,11 @@ open class ConfigHelper {
             }
         } else
             error = "Authorization header or query param `refresh_token` is not found"
-        return ServerResponse.badRequest().bodyValue(JsonUtils.objectNode()
-            .put("error", "Invalid request")
-            .put("error", error))
+        return ServerResponse.badRequest().bodyValue(
+            JsonUtils.objectNode()
+                .put("error", "Invalid request")
+                .put("error", error)
+        )
     }
 
     private fun skipValidation(authToken: String): Mono<Authentication> {
@@ -172,11 +182,11 @@ open class ConfigHelper {
                 ) {
                     error("Expired JWT token")
                 } else {
-                    val authorities: Collection<GrantedAuthority> =
-                            (claims[Constants.ROLES_KEY] as List<String>)
+                    val authorities: Collection<GrantedAuthority> = (claims[Constants.ROLES_KEY] as List<String>)
                             .map { role -> SimpleGrantedAuthority(role) }.toList()
                     val principal = User(claims[Claims.SUBJECT].toString(), StringUtils.EMPTY, authorities)
-                    sink.next(UsernamePasswordAuthenticationToken(principal, claims, authorities))
+                    val userId = UUID.fromString(claims[Constants.USER_ID] as String)
+                    sink.next(UsernamePasswordAuthenticationToken(principal, userId, authorities))
                 }
             }
     }
@@ -185,7 +195,8 @@ open class ConfigHelper {
         try {
             val introspect = Beans.of(ReactiveOpaqueTokenIntrospector::class.java)
             http.oauth2ResourceServer().opaqueToken().introspector(introspect)
-        } catch (_: RuntimeException) {}
+        } catch (_: RuntimeException) {
+        }
         return http
     }
 }

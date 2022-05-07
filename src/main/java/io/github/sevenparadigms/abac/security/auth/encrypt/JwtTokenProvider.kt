@@ -59,7 +59,7 @@ class JwtTokenProvider(val jwt: JwtProperties) : ApplicationListener<RevokeToken
                     getPrivateKey()
                 } else
                     SecretKeySpec(
-                        (jwt.secretKey + jwt.expiration).toByteArray(),
+                        jwt.secretKey.toByteArray(),
                         SignatureAlgorithm.valueOf(jwt.signatureAlgorithm).jcaName
                     )
             )
@@ -79,7 +79,7 @@ class JwtTokenProvider(val jwt: JwtProperties) : ApplicationListener<RevokeToken
                     getPrivateKey()
                 } else
                     SecretKeySpec(
-                        (jwt.secretKey + jwt.expiration).toByteArray(),
+                        jwt.secretKey.toByteArray(),
                         SignatureAlgorithm.valueOf(jwt.signatureAlgorithm).jcaName
                     )
             )
@@ -101,12 +101,9 @@ class JwtTokenProvider(val jwt: JwtProperties) : ApplicationListener<RevokeToken
     fun getAuthentication(authorizeKey: String): Authentication {
         if (JwtCache.has(authorizeKey)) {
             val (principal, expireDate, expired) = JwtCache.get(authorizeKey)!!
-            if (Date().after(expireDate)) {
-                error("Expired JWT token: $authorizeKey")
-                throw BadCredentialsException("Invalid token")
-            }
-            if (expired) {
-                error("Revoked JWT token: $authorizeKey")
+            if (Date().after(expireDate) || expired) {
+                if (Date().after(expireDate)) error("Expired JWT token: $authorizeKey")
+                if (expired) error("Revoked JWT token: $authorizeKey")
                 throw BadCredentialsException("Invalid token")
             }
             return UsernamePasswordAuthenticationToken(principal.toUser(), principal.id, principal.toUser().authorities)
@@ -129,7 +126,7 @@ class JwtTokenProvider(val jwt: JwtProperties) : ApplicationListener<RevokeToken
                     )
                 )
                     SecretKeySpec(
-                        (jwt.secretKey + jwt.expiration).toByteArray(),
+                        jwt.secretKey.toByteArray(),
                         SignatureAlgorithm.valueOf(jwt.signatureAlgorithm).jcaName
                     )
                 else
