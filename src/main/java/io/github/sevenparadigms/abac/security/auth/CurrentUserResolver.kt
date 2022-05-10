@@ -7,7 +7,7 @@ import reactor.core.publisher.Mono
 class CurrentUserResolver : AuthenticationIdentifierResolver {
     override fun resolve(): Mono<Any> {
         return ExchangeHolder.getUserPrincipal()
-            .switchIfEmpty(Mono.empty())
+            .onErrorResume { Mono.empty() }
             .map { it.id } as Mono<Any>
     }
 }
