@@ -16,6 +16,12 @@ data class UserPrincipal(
 
 fun UserPrincipal.toUser() = User(login, password, authorities!!.map { SimpleGrantedAuthority(it) }.toList())
 
+fun User.toPrincipal() = UserPrincipal(
+    login = username,
+    password = StringUtils.EMPTY,
+    authorities = authorities.map { it.authority }.toList()
+)
+
 fun Authentication.toPrincipal() = UserPrincipal(
     id = credentials as UUID,
     login = name,
